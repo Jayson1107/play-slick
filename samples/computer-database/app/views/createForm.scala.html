@@ -1,4 +1,4 @@
-@(computerForm: Form[Computer], companies: Seq[(String, String)])
+@(computerForm: Form[entities.Computer], companies: Seq[(String, String)])
 
 @import helper._
 
@@ -28,7 +28,7 @@
         
         <div class="actions">
             <input type="submit" value="Create this computer" class="btn primary"> or 
-            <a href="@routes.Application.list()" class="btn">Cancel</a> 
+            <a href="@routes.Application.list("computers")" class="btn">Cancel</a> 
         </div>
         
     }

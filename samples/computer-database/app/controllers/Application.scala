@@ -4,19 +4,54 @@ import play.api._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
-
+import play.api.Play.current
+import play.api.db.slick.DB
+import play.api.db.slick.Config.driver.simple._
+import play.api.db.slick.Config.driver.simple.{Session => DBSession}
 import views._
 import models._
+import models.dao
+import models.autojoins._
+import models.tableQueries._
+import models.entities._
+import models.idConversions._
+import models.queryExtensions._
+import slick.ast.{JoinType}
+import models.playSlickHelpers._
+import models.playSlickHelpers.implicits._
+import models.playSlickHelpers.implicits.more._
 
 /**
  * Manage a database of computers
  */
-object Application extends Controller { 
-  
+object Application extends Controller {
+  import scala.slick.session.Database.threadLocalSession
+  import play.templates.TemplateMagic._
+  /**
+    A Database transaction enabled Action, which when a database request happens and closed and commited at the end of the request.
+    For explicit control over session or transaction use DB.withSession or DB.withTransaction scopes.
+    */
+  object Action{
+    val that = play.api.mvc.Action
+    def apply(block: (Request[AnyContent]) => Result): Action[AnyContent] = {
+      that.apply( r => {
+        DB.database.withSession{
+          block(r)
+        }
+      })
+    }
+    def apply(block: => Result): Action[AnyContent] = {
+      that.apply{
+        DB.database.withSession{
+          block
+        }
+      }
+    }
+  }
   /**
    * This result directly redirect to the application home.
    */
-  val Home = Redirect(routes.Application.list(0, 2, ""))
+  val Home = Redirect(routes.Application.list("computers",0, 1, ""))
   
   /**
    * Describe the computer form (used in both edit and create screens).
@@ -37,7 +72,147 @@ object Application extends Controller {
    * Handle default path requests, redirect to computers list
    */  
   def index = Action { Home }
-  
+
+
+  def examples(name:String) = Action{ implicit request =>
+    name match{
+      case "collectionLikeApi" => 
+        val q = for ( d <- Devices;
+          if d.price > 1000.0
+        ) yield d.acquisition
+        val values = q.run.map(_.format("yyyy-MM-dd") )
+        Ok(html.main(html.show(values)))
+      case "collectionLikeApi2" => 
+        val q = Devices
+                .filter(_.price > 1000.0)
+                .map(_.acquisition)
+        val values = q.run.map(_.format("yyyy-MM-dd") )
+        Ok(html.main(html.show(values)))
+      case "transferredData" => {
+        val device = Devices.byId(123L) : Query[tables.Devices,Device] 
+        val site   = Site(None,"New York")
+        val siteId = tables.Sites.autoInc.insert( site )
+        device.map(_.siteId).update(siteId)
+        Ok(html.main(html.show("updates done")))
+      }
+      case "selectStatement" => {
+        val sql = Devices
+          .filter(_.price > 1000.0)
+          .map(_.acquisition)
+          .selectStatement
+        Ok(html.main(html.show(sql)))
+      }
+      case "joins" => {
+        val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
+
+        val sites   = Sites.filter(_.id === 1L)
+        val devices = Devices.filter(_.price > 1000.0)
+
+        sites.join( devices ).on( sitesToDevices )
+        val q = sites join devices on sitesToDevices
+
+
+        Ok(html.main(html.show(q.run)))
+      }
+      case "autojoins-1-n" => {
+        implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
+        val sites = Sites
+        val devices = Devices
+        sites autoJoin devices
+        devices autoJoin sites
+        val res = sites.autoJoin( devices, JoinType.Left )
+              .map(
+                row => (
+                  row._1,
+                  row._2.option
+                )
+              )
+              .run
+              .map(
+                row => (
+                  row._1,
+                  (Device.applyOption _).tupled(row._2)
+                )
+              )
+        Ok(html.main(html.show(res.mkString("\n"))))
+      }
+      case "joinTypes" => {
+        val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
+        val sites = Sites
+        val devices = Devices
+        sites leftJoin  devices on sitesToDevices
+        sites rightJoin devices on sitesToDevices
+        sites outerJoin devices on sitesToDevices
+
+        sites.autoJoin( devices, JoinType.Left )
+        sites.autoJoin( devices, JoinType.Right )
+        sites.autoJoin( devices, JoinType.Outer )
+
+        Ok(html.main(html.show("nothing here")))
+      }
+      case "autojoins-1-n" => {
+        implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
+        implicit def autojoin2 = joinCondition[tables.Devices,tables.Computers](_.computerId === _.id)
+
+        val q = Sites.autoJoin(Devices).further(Computers) : Query[_,(Site,Computer)]
+        Sites.autoJoin(Devices).autoJoinVia(Computers)(_._2) : Query[_,((Site,Device),Computer)]
+        Ok(html.main(html.show(q.run)))
+      }
+      case "subClasses" => {
+        val q = Sites
+         .autoJoin( ResearchSites, JoinType.Left )
+         .autoJoinVia( ProductionSites,  JoinType.Left )(_._1)
+         : Query[_,((Site,ResearchSite),ProductionSite)]
+        Ok(html.main(html.show("nothing here")))
+      }
+      case "rowFunctions" => {
+        val q = Sites.filter( _.byName("Lausanne") )
+        Ok(html.main(html.show(q.run)))
+      }
+      case "" => {
+        val q = Sites
+        Ok(html.main(html.show(q.run)))
+      }
+      case "" => {
+        val q = Sites
+        Ok(html.main(html.show(q.run)))
+      }
+      case "sites" =>
+
+        def foo( s:Query[tables.Sites,Site], i:Query[tables.Devices,Device] ) = s autoJoin i
+import slick.jdbc.StaticQuery.interpolation
+val price = 1000.0
+/*        println(
+sql"""
+  select *
+  from ITEMS
+  where price > $price
+""".as[Device]
+)*/
+        (Sites.filter(_.id === 1L).autoJoin(Devices.filter(_.price > 1000.0),JoinType.Left)).run
+        for(
+          i <- Devices;
+          s <- i.site;
+          if s.id === 1L && i.price > 1000.0
+        ) yield (i,s)
+
+
+
+        val q = Sites.autoJoin( Computers, JoinType.Left )
+          .map{ case(s,c) => (s.name,c.name.?) }
+          println(q.selectStatement)
+        val res = q.run
+          .groupBy(_._1)
+          .mapValues(_.flatMap(_._2))
+          .map{ case(s,c) => (s,c.mkString(", ")) }
+          .map(_.productIterator.map(s => Some(s.toString)).toList).toList
+
+        // Stefan fragen: [JdbcSQLException: Column "X11.id" not found; SQL statement: CREATE FORCE VIEW PUBLIC._25 AS SELECT X11."id" AS X3, X11."name" AS X4 FROM SYSTEM_RANGE(1, 1) [42122-168]]
+        // val res = Sites.flatMap(s => Query(s) autoJoin Devices).run
+
+        Ok(html.main(html.table("sites",Seq(),res)))
+    }
+  }
   /**
    * Display the paginated list of computers.
    *
@@ -45,11 +220,41 @@ object Application extends Controller {
    * @param orderBy Column to be sorted
    * @param filter Filter applied on computer names
    */
-  def list(page: Int, orderBy: Int, filter: String) = Action { implicit request =>
-    Ok(html.list(
-      Computers.list(page = page, orderBy = orderBy, filter = ("%"+filter+"%")),
-      orderBy, filter
-    ))
+  def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
+    val args = tables.tableByName(tableName) match{
+      case tables.Computers =>
+        val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
+        (
+          currentPage,
+          Seq(
+              (1, "Computer name"),
+              (2, "Introduced"),
+              (3, "Discontinued"),
+              (4, "Company")
+          ),
+          currentPage.items.map { case (computer,company) =>
+              Seq(
+                  Some(<a href={routes.Application.edit(computer.id.get).toString}>{computer.name}</a>),
+                  computer.introduced.map(_.format("dd MMM yyyy")),
+                  computer.discontinued.map(_.format("dd MMM yyyy")),
+                  company.map(_.name)
+              )
+          }
+        )
+      case t => 
+        val currentPage = dao.byTable(t).list(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
+        (
+          currentPage,
+          Seq(
+              
+          ),
+          currentPage.items.map {_.productIterator.drop(1).map(e => Some(e.toString)).toSeq}
+        )
+    }
+    Ok(
+      ((currentPage:Page[_],headers:Seq[(Int,String)],values:Seq[Seq[Option[java.io.Serializable]]])
+          => html.list.apply(currentPage,orderBy,filter,tableName,headers,values)).tupled(args)
+    )
   }
   
   /**
@@ -58,8 +263,8 @@ object Application extends Controller {
    * @param id Id of the computer to edit
    */
   def edit(id: Long) = Action {
-    Computers.findById(id).map { computer =>
-      Ok(html.editForm(id, computerForm.fill(computer), Companies.options))
+    dao.Computers.byId(id).map { computer =>
+      Ok(html.editForm(id, computerForm.fill(computer), Companies.options.run))
     }.getOrElse(NotFound)
   }
   
@@ -70,9 +275,9 @@ object Application extends Controller {
    */
   def update(id: Long) = Action { implicit request =>
     computerForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(html.editForm(id, formWithErrors, Companies.options)),
+      formWithErrors => BadRequest(html.editForm(id, formWithErrors, Companies.options.run)),
       computer => {
-        Computers.update(id, computer)
+        dao.Computers.update( id, computer ) // TODO: queries.Computers.byId(id).update( computer ) // TODO: what happens if we don't set id manually?
         Home.flashing("success" -> "Computer %s has been updated".format(computer.name))
       }
     )
@@ -81,8 +286,10 @@ object Application extends Controller {
   /**
    * Display the 'new computer form'.
    */
-  def create = Action {
-    Ok(html.createForm(computerForm, Companies.options))
+  def create(kind:String) = Action {
+    kind match{
+      case "computers" => Ok(html.createForm(computerForm, Companies.options.run))
+    }
   }
   
   /**
@@ -90,9 +297,9 @@ object Application extends Controller {
    */
   def save = Action { implicit request =>
     computerForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(html.createForm(formWithErrors, Companies.options)),
+      formWithErrors => BadRequest(html.createForm(formWithErrors, Companies.options.run)),
       computer => {
-        Computers.insert(computer)
+        dao.Computers.insert( computer ) // TODO: replace by queries.Computers.insert(computer)queries.Computers.insert(computer)(implicitly[DBSession],tables.Computers)
         Home.flashing("success" -> "Computer %s has been created".format(computer.name))
       }
     )
@@ -102,7 +309,7 @@ object Application extends Controller {
    * Handle computer deletion.
    */
   def delete(id: Long) = Action {
-    Computers.delete(id)
+    dao.Computers.delete(id) // TODO: replace by queries.Computers.byId(id).delete aka queryToDeleteInvoker(queries.Computers.byId(id)).deleteInvoker.delete
     Home.flashing("success" -> "Computer has been deleted")
   }
 

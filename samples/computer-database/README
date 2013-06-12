@@ -1,7 +1,8 @@
-This is a classic CRUD application, backed by a JDBC database. It demonstrates:
+This is a sample application using Slick and Play as referenced in the "Slick vs. ORM" Talk at Scala Days 2013.
+The app suggests an architecture for Slick applications and shows various sample queries and re-usable query abstractions.
+The Slick related files can be found in samples/computer-database/app/models/ and samples/computer-database/app/controller/. 
+Use Play 2.1 to try it. In branch scaladays2013, folder samples/computer-database/ type play, then type run, access the app via your browser http://localhost:9000/ .
+The GUI is very limited. The interesting part is the Scala code using Slick.
 
-- Accessing a JDBC database, using Slick.
-- Achieving, table pagination and CRUD forms.
-- Integrating with a CSS framework (Twitter Bootstrap ).
-
-Twitter Bootstrap requires a different form layout to the default one that the Play 2.0 form helper generates, so this application also provides an example of integrating a custom form input constructor.
+http://slick.typesafe.com/talks/2013_scaladays/2013_scaladays.pdf
+http://scaladays.org/#/june-12/room1/15:30-16:15/Slick-vs.-ORM

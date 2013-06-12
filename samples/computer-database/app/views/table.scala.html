@@ -1,0 +1,40 @@
+@(kind:String, headers: Seq[(Int,String)], values:Seq[Seq[Option[java.io.Serializable]]],currentOrderBy:Int=1,currentFilter:String="")
+@****************************************
+* Helper generating navigation links    *
+****************************************@
+@link(newPage: Int, newOrderBy: Option[Int] = None) = @{
+    routes.Application.list(kind,newPage, newOrderBy.map { orderBy =>
+        if(orderBy == scala.math.abs(currentOrderBy)) -currentOrderBy else orderBy
+    }.getOrElse(currentOrderBy), currentFilter)
+    
+}
+@**********************************
+* Helper generating table headers *
+***********************************@
+@header(orderBy: Int, title: String) = {
+    <th class="col@orderBy header @if(scala.math.abs(currentOrderBy) == orderBy) @{if(currentOrderBy < 0) "headerSortDown" else "headerSortUp"}">
+        <a href="@link(0, Some(orderBy))">@title</a>
+    </th>
+}
+@if(!values.isEmpty) {
+    <table class="@{kind} zebra-striped">
+        <thead>
+            <tr>
+            @headers.map((header _).tupled)
+            </tr>
+        </thead>
+        <tbody>
+            @values.map{ case row => 
+                <tr>
+                    @row.map{ cell => <td>@cell.getOrElse(<em>-</em>)</td> }
+                </tr>                   
+            }
+        </tbody>
+    </table>
+} else {
+    
+    <div class="well">
+        <em>Nothing to display</em>
+    </div>
+
+}

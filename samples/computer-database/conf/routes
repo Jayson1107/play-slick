@@ -6,10 +6,10 @@
 GET     /                           controllers.Application.index
 
 # Computers list (look at the default values for pagination parameters)
-GET     /computers                  controllers.Application.list(p:Int ?= 0, s:Int ?= 2, f ?= "")
+GET     /:kind                      controllers.Application.list(kind:String, p:Int ?= 0, s:Int ?= 1, f ?= "")
 
 # Add computer
-GET     /computers/new              controllers.Application.create
+GET     /:kind/new                  controllers.Application.create(kind:String)
 POST    /computers                  controllers.Application.save
 
 # Edit existing computer
@@ -22,3 +22,5 @@ POST    /computers/:id/delete       controllers.Application.delete(id:Long)
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
+#others
+GET     /examples/:name             controllers.Application.examples(name:String)

@@ -2,6 +2,12 @@ import java.text.SimpleDateFormat
 import play.api._
 
 import models._
+import models.tables._
+import models.entities._
+import play.api.db.slick.DB
+import play.api.Play.current
+import scala.slick.jdbc.StaticQuery.interpolation
+import java.util.Date
 
 object Global extends GlobalSettings {
 
@@ -20,7 +26,19 @@ object InitialData {
   val sdf = new SimpleDateFormat("yyyy-MM-dd")
 
   def insert() {
-    if (Computers.count == 0) {
+    DB.withTransaction{ implicit s =>
+     if (dao.Computers.length == 0) {
+/*    Seq(
+        """INSERT INTO""",
+    ).foreach(q => Q.updateNA(q).execute)
+*/
+
+      Seq[(Option[Long],String)](
+        (Some(1L),"Lausanne"),
+        (None,"Uppsala"),
+        (None,"San Francisco")
+      ).map( (Site.apply _).tupled ).foreach(Sites.autoInc.insert)
+
       Seq(
         Company(Option(1L), "Apple Inc."),
         Company(Option(2L), "Thinking Machines"),
@@ -64,8 +82,7 @@ object InitialData {
         Company(Option(41L), "HTC Corporation"),
         Company(Option(42L), "Research In Motion"),
         Company(Option(43L), "Samsung Electronics")
-      ).foreach(Companies.insert)
-
+      ).foreach(Companies.autoInc.insert)
       Seq(
         Computer(Option(1L), "MacBook Pro 15.4 inch", None, None, Option(1L)),
         Computer(Option(2L), "CM-2a", None, None, Option(2L)),
@@ -641,7 +658,14 @@ object InitialData {
         Computer(Option(572L), "Dell Vostro", None, None, None),
         Computer(Option(573L), "Gateway LT3103U", Option(sdf.parse("2008-01-01")), None, None),
         Computer(Option(574L), "iPhone 4S", Option(sdf.parse("2011-10-14")), None, Option(1L))
-      ).foreach(Computers.insert)
+      ).foreach(Computers.autoInc.insert)
+
+      tables.Devices.autoInc.insertAll(
+        Seq(
+          (None,1L,1L, new Date(), 2500.0 )
+        ).map((Device.apply _).tupled) :_*
+      )
     }
+   }
   }
 }
