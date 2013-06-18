@@ -71,18 +71,12 @@ object playSlickHelpers{
     }*/
   }
 
-  // Table[_] interface for allowing table components
-  trait TableTrait{
-    def column[C](n: String, options: ColumnOption[C]*)(implicit tm: TypeMapper[C]): Column[C]
-    def foreignKey[P, PU, TT <: TableNode, U](name: String, sourceColumns: P, targetTable: TT)(targetColumns: (TT) ⇒ P, onUpdate: ForeignKeyAction = ForeignKeyAction.NoAction, onDelete: ForeignKeyAction = ForeignKeyAction.NoAction)(implicit unpack: Shape[TT, U, _], unpackp: Shape[P, PU, _]): ForeignKeyQuery[TT, U] 
-    def index[T](name: String, on: T, unique: Boolean = false)(implicit shape: Shape[T, _, _]) : Index
-    val O: scala.slick.driver.BasicTableComponent#BasicColumnOptions
-  }
 
-  abstract class SlickBaseTable[E](table:String) extends Table[E](table){
+
+/*  abstract class SlickBaseTable[E](table:String) extends Table[E](table){
     //def getTable[RE,RT <: Table[RE]]( t: RT, joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[this.type,RT]) : Query[RT,RE]
     //  = get( Query(t), joinType )
     //def get[RE,RT <: Table[RE]]( q: Query[RT,RE], joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[this.type,RT]) : Query[RT,RE]
     //  = q.filter( r => joinCondition(this,r) )
-  }
+  }*/
 }

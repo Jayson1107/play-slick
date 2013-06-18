@@ -75,66 +75,82 @@ object Application extends Controller {
 
 
   def examples(name:String) = Action{ implicit request =>
+    def show(values:Any) = Ok(html.main(html.show(values)))
+    // see slides
     name match{
-      case "collectionLikeApi" => 
+      case "collectionLikeApi" =>
+        // for-comprehension Syntax
         val q = for ( d <- Devices;
           if d.price > 1000.0
         ) yield d.acquisition
-        val values = q.run.map(_.format("yyyy-MM-dd") )
-        Ok(html.main(html.show(values)))
-      case "collectionLikeApi2" => 
+        show( q.run.map(_.format("yyyy-MM-dd")) )
+
+      case "collectionLikeApi2" =>
+        // method-based collection syntax (which for-comprehensions expand to internally)
         val q = Devices
                 .filter(_.price > 1000.0)
                 .map(_.acquisition)
-        val values = q.run.map(_.format("yyyy-MM-dd") )
-        Ok(html.main(html.show(values)))
+        show( q.run.map(_.format("yyyy-MM-dd")) )
+
       case "transferredData" => {
+        // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[tables.Devices,Device] 
         val site   = Site(None,"New York")
         val siteId = tables.Sites.autoInc.insert( site )
         device.map(_.siteId).update(siteId)
-        Ok(html.main(html.show("updates done")))
+        show("updates done")
       }
       case "selectStatement" => {
+        // show generated SQL code for debugging
         val sql = Devices
           .filter(_.price > 1000.0)
           .map(_.acquisition)
           .selectStatement
-        Ok(html.main(html.show(sql)))
+        show(sql)
       }
       case "joins" => {
+        // simple join with Slick's built-in join on methods
+
+        // put condition into a val so it can be re-used
         val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
 
+        // just two queries
         val sites   = Sites.filter(_.id === 1L)
         val devices = Devices.filter(_.price > 1000.0)
 
-        sites.join( devices ).on( sitesToDevices )
-        val q = sites join devices on sitesToDevices
+        // join the two queries using the condition
+        val res1 = sites.join( devices ).on( sitesToDevices ) run
 
+        // scala's alternative method call syntax without . and ( )
+        val res2 = sites join devices on sitesToDevices run
 
-        Ok(html.main(html.show(q.run)))
+        show(res2)
       }
       case "autojoins-1-n" => {
+        // autojoins, which are not a Slick feature, but implemented in oackage playSlickHelpers of this sample app
         implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
-        val sites = Sites
-        val devices = Devices
-        sites autoJoin devices
-        devices autoJoin sites
-        val res = sites.autoJoin( devices, JoinType.Left )
-              .map(
-                row => (
-                  row._1,
-                  row._2.option
-                )
-              )
-              .run
-              .map(
-                row => (
-                  row._1,
-                  (Device.applyOption _).tupled(row._2)
-                )
-              )
-        Ok(html.main(html.show(res.mkString("\n"))))
+
+        // just two queries
+        val sites   = Sites.filter(_.id != 1L)
+        val devices = Devices.filter(_.price > 0.0)
+
+        // inner join
+        val res1 = sites autoJoin devices run
+
+        // inner join in opposite direction
+        val res2 = devices autoJoin sites run
+
+        // left outer join selecting particular fields from the joined table using the .? operator to avoid "Read NULL value for column"
+        val res3 = sites.autoJoin( devices, JoinType.Left )
+                       .map{ case (s,d) => (s, (d.price.?,d.acquisition.?)) }
+                       .run
+
+        // outer join fetching whole objects (using .option helper method for mapping)
+        val res4 = sites.autoJoin( devices, JoinType.Left )
+                       .map( row => (row._1,row._2.option) ) // .option is a user defined method in table Devices
+                       .run
+
+        Ok(html.main(html.show(res4.mkString("\n"))))
       }
       case "joinTypes" => {
         val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
@@ -150,7 +166,7 @@ object Application extends Controller {
 
         Ok(html.main(html.show("nothing here")))
       }
-      case "autojoins-1-n" => {
+      case "autojoins-n-n" => {
         implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
         implicit def autojoin2 = joinCondition[tables.Devices,tables.Computers](_.computerId === _.id)
 

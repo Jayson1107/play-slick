@@ -23,11 +23,11 @@ object queryExtensions{
     def get[RE,RT <: Table[RE]]( q: Query[RT,RE], joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
       = q.filter( r => joinCondition(t1,r) )
   }
-  implicit def extendAllQueries2[E,T <: BaseTable[E]](q:Query[T,E]) = new{
+  implicit def extendAllQueries2[E,T <: HasId](q:Query[T,E]) = new{
     import q._
     def byId( id:Column[Long] )
       = filter(_.id === id)
-    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = table.autoInc.insert(entity)
+//    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = table.autoInc.insert(entity)
   }
   implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
     import q._
@@ -41,7 +41,7 @@ object queryExtensions{
     }
   }
 
-  implicit def extendHasName[E,T <: BaseTable[E] with HasName with HasId](q:Query[T,E]) = new {
+  implicit def extendHasName[E,T <: HasName with HasId](q:Query[T,E]) = new {
     import q._
     def byName( pattern:Column[String] )
       = filter(_.byName(pattern))

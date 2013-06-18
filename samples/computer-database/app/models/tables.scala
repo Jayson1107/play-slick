@@ -8,7 +8,7 @@ import java.util.Date // TODO: remove
 import models.types._
 
 // slick dependencies
-import slick.lifted.{Projection}//,TypeMapper,ForeignKeyAction,ForeignKeyQuery,MappedTypeMapper,Index,Join, MappedTypeMapper, MappedProjection, Projection,Shape}
+import slick.lifted.{Projection}
 
 // model internal dependencies
 import models.entities._
@@ -28,7 +28,7 @@ object packageHelpers{
 }
 import packageHelpers._
 
-abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends SlickBaseTable[E](table:String) with HasId{
+abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId{
   def tableNamePlural   = this.getClass.getName.split("\\$").reverse.head
   def tableNameSingular = etype.tpe.typeSymbol.name.decoded
   def tableNameDb       = table.toLowerCase
@@ -40,10 +40,12 @@ abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Sli
   def columns : Projection[_]
   def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
 }
-trait HasId extends TableTrait{
+trait HasId{
+  this:Table[_]=>
   def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
 }
-trait HasName extends TableTrait{
+trait HasName{
+  this:Table[_]=>
   def name = column[String]("name", O.NotNull)
   def byName( pattern:Column[String] ) = iLike( name, pattern )
 }
@@ -54,12 +56,14 @@ object tables{
   }
   def tableByName = allTables.map( t => t.tableNamePlural.toLowerCase -> t ).toMap
 
-  trait HasSite extends TableTrait{
+  trait HasSite{
+    this:Table[_]=>
     def siteId = column[Long]("site_id")
     def site  = foreignKey(fkName,siteId,Sites)(_.id)
   }
   trait HasExclusiveSite extends HasSite{
-    def idx = index(idxName, (siteId), unique = true)
+   this:Table[_]=>
+   def idx = index(idxName, (siteId), unique = true)
   }
 
   // table objects
@@ -91,16 +95,27 @@ object tables{
     def items : Query[Devices,Device] = for( i <- Devices; s <- i.site; if s.id === id ) yield i // Query(Devices).filter(_.siteId === id)//
     def computers = items.flatMap( _.computer )
   }
+  def mapToOption[T <: Product,R]( p:Projection[T] )( to: T => R ) = mapOption(p)(to)((_:R) => None)
+  def mapOption  [T <: Product,R]( p:Projection[T] )( to: T => R )( from: R => Option[T] ) = p <> (to,from)
   val Devices = new Devices
-  class Devices extends BaseTable[Device]("DEVICE") with HasSite{
-    def columns = id.? ~ computerId ~ siteId ~ acquisition ~ price
+  class Devices extends BaseTable[Device]("DEVICE") with HasSite{// with Joinable[(Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double])]{
+    def columns = computerId ~ siteId ~ acquisition ~ price
     def computerId = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price = column[Double]("price")
     def computer = foreignKey(fkName,computerId,Computers)(_.id)
-    def * = columns <> (Device.apply _, Device.unapply _)
+    def * = id.? ~: columns <> (Device.apply _, Device.unapply _)
     def idx = index(idxName, (computerId, siteId), unique=true)
-    def option = id.? ~ computerId.? ~ siteId.? ~ acquisition.? ~ price.?
+    /**
+      * used for fetching whole Device object after outer join, also example autojoins-1-n
+      * mapping all columns to Option using .? and using the mapping to the special
+      * applyOption and unapplyOption constructor/extractor methods is s
+      */
+    def option[T] = mapToOption( id.? ~ computerId.? ~ siteId.? ~ acquisition.? ~ price.? ){
+                      //case (id:Some[_],Some(_2),Some(_3),Some(_4),Some(_5)) => Some(Device(id,_2,_3,_4,_5))
+                      case (_1:Some[_],_2,_3,_4,_5) => Some(Device(_1,_2.get,_3.get,_4.get,_5.get))
+                      case _ => None
+                    }
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{

@@ -8,6 +8,7 @@ import play.api.db.slick.DB
 import play.api.Play.current
 import scala.slick.jdbc.StaticQuery.interpolation
 import java.util.Date
+import play.api.db.slick.Config.driver.simple._
 
 object Global extends GlobalSettings {
 
@@ -27,7 +28,7 @@ object InitialData {
 
   def insert() {
     DB.withTransaction{ implicit s =>
-     if (dao.Computers.length == 0) {
+     if (Query(tableQueries.Computers.length).first == 0) {
 /*    Seq(
         """INSERT INTO""",
     ).foreach(q => Q.updateNA(q).execute)
