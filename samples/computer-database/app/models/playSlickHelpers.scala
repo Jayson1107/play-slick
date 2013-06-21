@@ -23,7 +23,7 @@ object playSlickHelpers{
   class ReversableJoinCondition[-L,-R]( condition : (L,R) => Column[Boolean] ) extends JoinCondition(condition){    
     def reversed = new JoinCondition[R,L]( (r,l) => apply(l,r) )
   }
-  def joinCondition[L,R]( condition : (L,R) => Column[Boolean] ) = new ReversableJoinCondition(condition)
+  def joinCondition[L,R]( condition : (L,R) => Column[_] ) = new ReversableJoinCondition(condition.asInstanceOf[(L,R) => Column[Boolean]])
   def complexAutoJoin[LE,RE,LT,RT]( autoJoin : (Query[LT,LE],Query[RT,RE],JoinType) => Query[(LT,RT),(LE,RE)] ) = new AutoJoin(autoJoin)
   object implicits{
     // autojoin

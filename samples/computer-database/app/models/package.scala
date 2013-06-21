@@ -47,5 +47,5 @@ package object idConversions{
   implicit def idToComputerQuery[E <: Computer]( id:Long ) = Computers.byId(id)
   implicit def idToCompanyQuery[E <: Company]( id:Long )   = Companies.byId(id)
   // objects as ids (may not be a good idea :), up to you)
-  implicit def objectToId( o:entities.HasId ) = o.id.getOrElse(throw new Exception("id was None when trying to convert object to id"))
+  //implicit def objectToId( o:entities.HasId ) = o.id.getOrElse(throw new Exception("id was None when trying to convert object to id"))
 }
