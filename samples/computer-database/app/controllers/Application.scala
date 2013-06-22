@@ -183,10 +183,17 @@ object Application extends Controller {
         Ok(html.main(html.show(q.run)))
       }
       case "filterNone" => {
-        val res = Computers.filter(_.companyId2 isNotNull).map(_.companyId2.get).run
+        val res = Computers.filter(_.companyId isNotNull).map(_.companyId.get).run
         println(res)
         show((res))
       }
+/*
+      case "dynamicColumns" => {
+        val columns = Seq("id","name")
+        val q = Sites.map( r => slick.util.TupleSupport.buildTuple( columns.map( name => r.column[String](name) ) ) )
+        Ok(html.main(html.show(q.run)))
+      }
+*/
       case "" => {
         val q = Sites
         Ok(html.main(html.show(q.run)))
@@ -236,7 +243,7 @@ sql"""
    */
   def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
     val args = schema.tableByName(tableName) match{
-      case tables.Computers =>
+      case schema.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (
           currentPage,

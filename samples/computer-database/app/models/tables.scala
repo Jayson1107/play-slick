@@ -1,9 +1,10 @@
-/** Table objects
+/** Description of the Database schema
   * 
-  * We call them Table objects because they extend Table. But in fact it is
-  * better to think of them as prototypes for rows.
+  * Each database table is described using a so called Table object which extends Table.
+  * In fact it is better to think of them as prototypes for rows. To add functionality to
+  * a row which can be used in a query like extra methods, add them to the Table object.
   *
-  * Do not use table object directly to start a query, but wrap them in a Query(...) call instead.
+  * Do not use table object directly to start a query, but wrap them in a Query(...) call instead like shown in tables.scala.
   * 
   * Query(Companies).filter(_.name === "Apple Inc.")
   * 
@@ -25,10 +26,11 @@ import play.api.db.slick.Config.driver.simple._
 import scala.reflect.runtime.universe.TypeTag
 
 import java.util.Date // TODO: remove
-import models.types._
+import types._
+
 
 // slick dependencies
-import slick.lifted.{Projection}
+import slick.lifted.{Projection,ColumnBase}
 
 // model internal dependencies
 import models.entities._
@@ -57,8 +59,7 @@ abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Tab
     x => new java.util.Date(x.getTime)
   )
   def autoInc = * returning id
-  def columns : Projection[_]
-  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
+  def columns : ColumnBase[_]
 }
 trait HasId{
   this:Table[_]=>
@@ -70,7 +71,7 @@ trait HasName{
   def byName( pattern:Column[String] ) = iLike( name, pattern )
 }
 
-object schema{
+package object schema{
   def allTables = {
     Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
   }
@@ -88,8 +89,8 @@ object schema{
 
   val Companies = new Companies
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
-    def columns = id.? ~ name
-    def * = columns <>(Company.apply _, Company.unapply _)
+    def columns = name
+    def * = id.? ~ columns <> (Company.apply _, Company.unapply _)
   }
   val Computers = new Computers
   class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
@@ -97,11 +98,10 @@ object schema{
     def introduced    = column[Option[Date]]("introduced")
     def discontinued  = column[Option[Date]]("discontinued")
     def companyId     = column[Option[Long]]("company_id")
-    def companyId2    = companyId
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
     //def companyOption = Query(this).filter(_.id === id).leftJoin(Companies).on(_.companyId === _.id).map(_._2)
-    def columns = id.? ~ name ~ introduced ~ discontinued ~ companyId
-    def * = columns <> (Computer.apply _, Computer.unapply _)
+    def columns = name ~ introduced ~ discontinued ~ companyId
+    def * = id.? ~: columns <> (Computer.apply _, Computer.unapply _)
 
     // relationships
     // TODO fixme
@@ -110,16 +110,18 @@ object schema{
   }
   val Sites = new Sites
   class Sites extends BaseTable[Site]("SITE") with HasName{
-    def columns = id.? ~ name
-    def * = columns <> (Site.apply _, Site.unapply _)
+    def columns = name
+  	def * = id.? ~ columns <> (Site.apply _, Site.unapply _)
     // relationships
     def items : Query[Devices,Device] = for( i <- Devices; s <- i.site; if s.id === id ) yield i // Query(Devices).filter(_.siteId === id)//
     def computers = items.flatMap( _.computer )
   }
+
   def mapToOption[T <: Product,R]( p:Projection[T] )( to: T => R ) = mapOption(p)(to)((_:R) => None)
   def mapOption  [T <: Product,R]( p:Projection[T] )( to: T => R )( from: R => Option[T] ) = p <> (to,from)
+  
   val Devices = new Devices
-  class Devices extends BaseTable[Device]("DEVICE") with HasSite{// with Joinable[(Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double])]{
+  class Devices extends BaseTable[Device]("DEVICE") with HasSite{
     def columns = computerId ~ siteId ~ acquisition ~ price
     def computerId = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
@@ -132,8 +134,7 @@ object schema{
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def option[T] = mapToOption( id.? ~ computerId.? ~ siteId.? ~ acquisition.? ~ price.? ){
-                      //case (id:Some[_],Some(_2),Some(_3),Some(_4),Some(_5)) => Some(Device(id,_2,_3,_4,_5))
+    def option = mapToOption( id.? ~ computerId.? ~ siteId.? ~ acquisition.? ~ price.? ){
                       case (_1:Some[_],_2,_3,_4,_5) => Some(Device(_1,_2.get,_3.get,_4.get,_5.get))
                       case _ => None
                     }
@@ -141,13 +142,13 @@ object schema{
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
     def size = column[Size]("size",O.DBType("INT(1)"))
-    def columns = id.? ~ siteId ~ size
-    def * = columns <> (ResearchSite.apply _, ResearchSite.unapply _)
+    def columns = siteId ~ size
+    def * = id.? ~: columns <> (ResearchSite.apply _, ResearchSite.unapply _)
   }
   val ProductionSites = new ProductionSites
   class ProductionSites extends BaseTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
     def volume = column[Int]("volume")
-    def columns = id.? ~ siteId ~ volume
-    def * = columns <> (ProductionSite.apply _, ProductionSite.unapply _)
+    def columns = siteId ~ volume
+    def * = id.? ~: columns <> (ProductionSite.apply _, ProductionSite.unapply _)
   }
 }

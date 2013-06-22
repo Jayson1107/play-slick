@@ -38,7 +38,7 @@ object InitialData {
         (Some(1L),"Lausanne"),
         (None,"Uppsala"),
         (None,"San Francisco")
-      ).map( (Site.apply _).tupled ).foreach(Sites.autoInc.insert)
+      ).map( (Site.apply _).tupled ).foreach(Sites.*.insert)
 
       Seq(
         Company(Option(1L), "Apple Inc."),
@@ -83,7 +83,7 @@ object InitialData {
         Company(Option(41L), "HTC Corporation"),
         Company(Option(42L), "Research In Motion"),
         Company(Option(43L), "Samsung Electronics")
-      ).foreach(Companies.autoInc.insert)
+      ).foreach(Companies.*.insert)
       Seq(
         Computer(Option(1L), "MacBook Pro 15.4 inch", None, None, Option(1L)),
         Computer(Option(2L), "CM-2a", None, None, Option(2L)),
@@ -659,9 +659,9 @@ object InitialData {
         Computer(Option(572L), "Dell Vostro", None, None, None),
         Computer(Option(573L), "Gateway LT3103U", Option(sdf.parse("2008-01-01")), None, None),
         Computer(Option(574L), "iPhone 4S", Option(sdf.parse("2011-10-14")), None, Option(1L))
-      ).foreach(Computers.autoInc.insert)
+      ).foreach(Computers.*.insert)
 
-      Devices.autoInc.insertAll(
+      Devices.*.insertAll(
         Seq(
           (None,1L,1L, new Date(), 2500.0 )
         ).map((Device.apply _).tupled) :_*

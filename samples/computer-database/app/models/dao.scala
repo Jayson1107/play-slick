@@ -68,7 +68,7 @@ object DAOWrapper{
       val values =
           filteredQuery
           // add filter
-          .sortByRuntimeValue(_.column _, orderBy)
+          //.sortByRuntimeValue(_.column _, orderBy)
           .paginate(page,pageSize)
           .run
       Page(values, page, pageSize, offset, total )
