@@ -5,16 +5,12 @@ import play.api.cache.Cache
 import play.api.db.slick.DB
 import play.api.Play.current
 
-
 // models dependencies
 import entities._
-import autojoins._
-import models.playSlickHelpers._
-import models.playSlickHelpers.implicits._
-import models.playSlickHelpers.implicits.more._
-import models.queryExtensions._
-import models.tableQueries._
-//import models.tables.{BaseTable}
+import autojoin._
+import relationships._
+import queries._
+import tables._
 
 /**
   exists, so DAO can be imported as plain names (without DAO postfix)
@@ -28,7 +24,7 @@ object dao{
   val ProductionSites = ProductionSitesDAO
   val ResearchSites   = ResearchSitesDAO
   val byTable = Map[BaseTable[_],DAOBase[_ <: Product]](
-    tables.Companies -> CompaniesDAO
+    schema.Companies -> CompaniesDAO
   )
 }
 /**
@@ -103,29 +99,29 @@ object DAOWrapper{
     }
   }
   object SitesDAO extends DAOBase[Site]{
-    type TableType = tables.Sites
-    def table = tables.Sites
+    type TableType = schema.Sites
+    def table = schema.Sites
   }
   object ProductionSitesDAO extends DAOBase[ProductionSite]{
-    type TableType = tables.ProductionSites
-    def table = tables.ProductionSites
+    type TableType = schema.ProductionSites
+    def table = schema.ProductionSites
   }
   object ResearchSitesDAO extends DAOBase[ResearchSite]{
-    type TableType = tables.ResearchSites
-    def table = tables.ResearchSites
+    type TableType = schema.ResearchSites
+    def table = schema.ResearchSites
   }
   object DevicesDAO extends DAOBase[Device]{
-    type TableType = tables.Devices
-    def table = tables.Devices
+    type TableType = schema.Devices
+    def table = schema.Devices
   }
   object CompaniesDAO extends DAOBase[Company]{
-    type TableType = tables.Companies
-    def table = tables.Companies
+    type TableType = schema.Companies
+    def table = schema.Companies
     private object Prepared extends PreparedBase{}
   }
   object ComputersDAO extends DAOBase[Computer]{
-    type TableType = tables.Computers
-    def table = tables.Computers
+    type TableType = schema.Computers
+    def table = schema.Computers
     private object Prepared extends PreparedBase{}
 
     /**
@@ -144,7 +140,7 @@ object DAOWrapper{
           import scala.slick.lifted._
           val values =
             computers
-              .autoJoin(Companies)
+              .join(Companies)
               .map{
                 case (computer, company) => (computer, company.id.?, company.name.?)
               }

@@ -6,20 +6,17 @@ import play.api.data._
 import play.api.data.Forms._
 import play.api.Play.current
 import play.api.db.slick.DB
-import play.api.db.slick.Config.driver.simple._
-import play.api.db.slick.Config.driver.simple.{Session => DBSession}
+import play.api.db.slick.Config.driver.simple.{Session => DBSession,_}
 import views._
 import models._
 import models.dao
-import models.autojoins._
-import models.tableQueries._
+import models.autojoin._
+import models.tables._
 import models.entities._
 import models.idConversions._
-import models.queryExtensions._
+import models.queries._
 import slick.ast.{JoinType}
-import models.playSlickHelpers._
-import models.playSlickHelpers.implicits._
-import models.playSlickHelpers.implicits.more._
+import models.relationships._
 
 /**
  * Manage a database of computers
@@ -94,9 +91,9 @@ object Application extends Controller {
 
       case "transferredData" => {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
-        val device = Devices.byId(123L) : Query[tables.Devices,Device] 
+        val device = Devices.byId(123L) : Query[schema.Devices,Device] 
         val site   = Site(None,"New York")
-        val siteId = tables.Sites.autoInc.insert( site )
+        val siteId = schema.Sites.autoInc.insert( site )
         device.map(_.siteId).update(siteId)
         show("updates done")
       }
@@ -112,7 +109,7 @@ object Application extends Controller {
         // simple join with Slick's built-in join on methods
 
         // put condition into a val so it can be re-used
-        val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
+        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.id === i.siteId 
 
         // just two queries
         val sites   = Sites.filter(_.id === 1L)
@@ -128,7 +125,7 @@ object Application extends Controller {
       }
       case "autojoins-1-n" => {
         // autojoins, which are not a Slick feature, but implemented in oackage playSlickHelpers of this sample app
-        implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
+        implicit def autojoin1 = joinCondition(Sites,Devices)(_.id === _.siteId)
 
         // just two queries
         val sites   = Sites.filter(_.id != 1L)
@@ -153,7 +150,7 @@ object Application extends Controller {
         Ok(html.main(html.show(res4.mkString("\n"))))
       }
       case "joinTypes" => {
-        val sitesToDevices = (s:tables.Sites,i:tables.Devices) => s.id === i.siteId 
+        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.id === i.siteId 
         val sites = Sites
         val devices = Devices
         sites leftJoin  devices on sitesToDevices
@@ -167,8 +164,8 @@ object Application extends Controller {
         Ok(html.main(html.show("nothing here")))
       }
       case "autojoins-n-n" => {
-        implicit def autojoin1 = joinCondition[tables.Sites,tables.Devices](_.id === _.siteId)
-        implicit def autojoin2 = joinCondition[tables.Devices,tables.Computers](_.computerId === _.id)
+        implicit def autojoin1 = joinCondition(Sites,Devices)(_.id === _.siteId)
+        implicit def autojoin2 = joinCondition(Devices,Computers)(_.computerId === _.id)
 
         val q = Sites.autoJoin(Devices).further(Computers) : Query[_,(Site,Computer)]
         Sites.autoJoin(Devices).autoJoinVia(Computers)(_._2) : Query[_,((Site,Device),Computer)]
@@ -185,9 +182,10 @@ object Application extends Controller {
         val q = Sites.filter( _.byName("Lausanne") )
         Ok(html.main(html.show(q.run)))
       }
-      case "" => {
-        val q = Sites
-        Ok(html.main(html.show(q.run)))
+      case "filterNone" => {
+        val res = Computers.filter(_.companyId2 isNotNull).map(_.companyId2.get).run
+        println(res)
+        show((res))
       }
       case "" => {
         val q = Sites
@@ -195,7 +193,7 @@ object Application extends Controller {
       }
       case "sites" =>
 
-        def foo( s:Query[tables.Sites,Site], i:Query[tables.Devices,Device] ) = s autoJoin i
+        def foo( s:Query[schema.Sites,Site], i:Query[schema.Devices,Device] ) = s autoJoin i
 import slick.jdbc.StaticQuery.interpolation
 val price = 1000.0
 /*        println(
@@ -237,7 +235,7 @@ sql"""
    * @param filter Filter applied on computer names
    */
   def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
-    val args = tables.tableByName(tableName) match{
+    val args = schema.tableByName(tableName) match{
       case tables.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (

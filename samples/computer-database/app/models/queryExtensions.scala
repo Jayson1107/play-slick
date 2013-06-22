@@ -6,16 +6,13 @@ import play.api.db.slick.Config.driver.simple._
 import slick.ast.{JoinType}
 
 // models internal dependencies
-import models.playSlickHelpers._
-import models.playSlickHelpers.implicits._
-import models.playSlickHelpers.implicits.more._
-import models.entities._
-//import models.tables.{BaseTable,HasName,HasId}
-import models.autojoins._
+import relationships._
+import entities._
+import autojoin._
 import tables._
 
-object queryExtensions{
-  import tableQueries._
+object queries{
+  import tables._
   implicit def extendBaseTableBlind[_,T <: BaseTable[_]](t1:T) = new{
     import t1._
     def getTable[RE,RT <: Table[RE]]( t: RT, joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
@@ -27,7 +24,7 @@ object queryExtensions{
     import q._
     def byId( id:Column[Long] )
       = filter(_.id === id)
-//    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = table.autoInc.insert(entity)
+//    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
   }
   implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
     import q._
@@ -52,7 +49,7 @@ object queryExtensions{
   }
 
   //TODO: make Query extension
-  def withChildren(sites:Query[Sites,Site]) =
+  def withChildren(sites:Query[schema.Sites,Site]) =
     sites.autoJoin( ResearchSites, JoinType.Left )
      .autoJoinVia( ProductionSites, JoinType.Left )(_._1)
      .map{ case((s,r),p) => (s, r.size.?, p.volume.?) }
@@ -73,7 +70,7 @@ package object queryExtensions{
     import q._
     def byId( id:Column[Long] )
       = filter(_.id === id)
-    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = table.autoInc.insert(entity)
+    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
   }
   implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
     import q._

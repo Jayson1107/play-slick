@@ -32,7 +32,7 @@ import slick.lifted.{Projection}
 
 // model internal dependencies
 import models.entities._
-import models.playSlickHelpers._
+//import models.playSlickHelpers._
 
 object packageHelpers{
   // generate unique names for foreign keys and indices
@@ -70,7 +70,7 @@ trait HasName{
   def byName( pattern:Column[String] ) = iLike( name, pattern )
 }
 
-object tables{
+object schema{
   def allTables = {
     Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
   }

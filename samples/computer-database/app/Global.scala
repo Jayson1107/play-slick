@@ -2,8 +2,8 @@ import java.text.SimpleDateFormat
 import play.api._
 
 import models._
-import models.tables._
-import models.entities._
+import schema._
+import entities._
 import play.api.db.slick.DB
 import play.api.Play.current
 import scala.slick.jdbc.StaticQuery.interpolation
@@ -28,7 +28,7 @@ object InitialData {
 
   def insert() {
     DB.withTransaction{ implicit s =>
-     if (Query(tableQueries.Computers.length).first == 0) {
+     if (Query(tables.Computers.length).first == 0) {
 /*    Seq(
         """INSERT INTO""",
     ).foreach(q => Q.updateNA(q).execute)
@@ -661,7 +661,7 @@ object InitialData {
         Computer(Option(574L), "iPhone 4S", Option(sdf.parse("2011-10-14")), None, Option(1L))
       ).foreach(Computers.autoInc.insert)
 
-      tables.Devices.autoInc.insertAll(
+      Devices.autoInc.insertAll(
         Seq(
           (None,1L,1L, new Date(), 2500.0 )
         ).map((Device.apply _).tupled) :_*

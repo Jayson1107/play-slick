@@ -1,7 +1,8 @@
-package models.entities
+package models
+package entities
 
 // models internal dependencies
-import models.types._
+import types._
 import java.util.Date
 
 // interfaces

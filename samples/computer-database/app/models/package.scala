@@ -5,7 +5,7 @@ import slick.ast.{JoinType}//TableNode,
 import slick.lifted.{MappedTypeMapper}//{ColumnOption}//,TypeMapper,ForeignKeyAction,ForeignKeyQuery,,Index,Join, MappedTypeMapper, MappedProjection, Projection,Shape}
 
 //models dependencies
-import queryExtensions._
+import queries._
 import entities._
 /*
 package object tables{
@@ -42,7 +42,7 @@ case class Page[A](items: Seq[A], page: Int, size:Int, offset: Long, total: Long
 
 package object idConversions{
   import play.api.db.slick.Config.driver.simple._
-  import tableQueries._
+  import tables._
   // enable using ids as queries
   implicit def idToComputerQuery[E <: Computer]( id:Long ) = Computers.byId(id)
   implicit def idToCompanyQuery[E <: Company]( id:Long )   = Companies.byId(id)
