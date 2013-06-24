@@ -67,18 +67,15 @@ package object schema{
   object interfaces{
     trait AutoInc[E] extends HasId with projections.ProjectionsOptionLifting[E]{
       this:BaseTable[E]=>
+      val typeHelper : TypeHelper
+      import typeHelper._
+      def columns : Projection[Columns]
+      def * = columns mapWith (create,extract)
+      def ? : ColumnBase[Option[E]]
       def autoInc2 : ColumnBase[E]
       def autoIncId = autoInc2 returning id
-      type Columns = typeHelper.Columns
-      import typeHelper._
-      def * = columns mapWith (create,extract)
-      def columns : Projection[Columns]
-      val typeHelper : TypeHelper
-      def create = typeHelper.create
-      def extract = typeHelper.extract
-      def ? : ColumnBase[Option[E]]
       implicit def mappingHelpers2  [T <: Product]( p:Projection[T] ) = new{
-        def mapInsert( from: typeHelper.Columns => T ) = mapWith[E](_ => ???, (e:E) => typeHelper.extract(e).map(from))
+        def mapInsert( from: typeHelper.Columns => T ) = mapWith[E](_ => ???, (e:E) => extract(e).map(from))
         def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
         def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
       }
@@ -191,7 +188,7 @@ package object schema{
       * applyOption and unapplyOption constructor/extractor methods is s
       */
     def ?        = columns mapToOption
-    def autoInc2 = data.mapInsert{ case data :+ id => data }
+    def autoInc2 = data    mapInsert{ case data :+ id => data }
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
