@@ -101,9 +101,9 @@ package object schema{
       //def columns : ColumnBase[ColumnTypes]
     //  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
       implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
-        def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???) (from)
-        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to)   (_ => ???)
-        def mapWith[E]( to: T => E )( from: E => Option[T] ) = p <> (to,from)
+        def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???, from)
+        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
+        def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
       }
     }
   }
@@ -117,7 +117,7 @@ package object schema{
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
     type ColumnTypes = String
     def columns = name
-    def * = (columns ~ id.?).mapWith(create)(extract) // TODO: what not id.?
+    def * = columns ~ id.? mapWith (create,extract)
     val extract = Company.unapply _
     val create  = (Company.apply _).tupled
   }
@@ -129,9 +129,8 @@ package object schema{
     def discontinued  = column[Option[Date]]("discontinued")
     def companyId     = column[Option[Long]]("company_id")
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
-    //def companyOption = Query(this).filter(_.id === id).leftJoin(Companies).on(_.companyId === _.id).map(_._2)
     def columns = name ~ introduced ~ discontinued ~ companyId
-    def * = (columns ~ id.?).mapWith(create)(extract)
+    def * = columns ~ id.? mapWith (create,extract)
     val extract = Computer.unapply _
     val create  = (Computer.apply _).tupled
   }
@@ -139,7 +138,7 @@ package object schema{
   class Sites extends BaseTable[Site]("SITE") with HasName{
     type ColumnTypes = (String)
     def columns = name
-    def * = (columns ~ id.?).mapWith(create)(extract)
+    def * = columns ~ id.? mapWith (create,extract)
     val extract = Site.unapply _
     val create  = (Site.apply _).tupled
   }
@@ -147,11 +146,13 @@ package object schema{
   val Devices = new Devices
   class Devices extends BaseTable[Device]("DEVICE") with HasSite with AutoInc[Device]{
     // joined columns
+    type ColumnTypes    = ( Long, Long, Date, Double )
+    type ColumnsOptions = ( Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double] )
     def columns       = computerId   ~ siteId   ~ acquisition   ~ price
     def optionColumns = computerId.? ~ siteId.? ~ acquisition.? ~ price.?
 
     // individual columns
-    def computerId = column[Long]("computer_id")
+    def computerId  = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price = column[Double]("price")
 
@@ -165,25 +166,20 @@ package object schema{
     val create  = (Device.apply _).tupled
 
     // generic helpers (can be copy and pasted between table objects)
-    def * = (columns ~ id.?).mapWith (create)(extract)
+    def * = columns ~ id.? mapWith (create,extract)
 
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def ? = optionColumns ~ id.? mapOption {
-      case ((_1,_2,_3,_4)) :+ (id@Some(_)) => Some( create((_1.get,_2.get,_3.get,_4.get,id)) )
-      //case data :+ Some(id) => data.liftOption.map( create(_ :+ id) )
-      case _ => None
-    }
+    def ? = optionColumns ~ id.?.? mapOption { _.liftOption.map(create) }
+
     def autoInc2 = columns mapInsert{ extract(_).map{
       case data :+ None => data
       case _ => insertWithIdException
     }}
 
-//    type ColumnTypes = (Long,Long,Date,Double)
-//    type ColumnsOptions = (Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double])
 //    type Columns        = (Long, Long, Long, java.util.Date, Double)
   }
   val ResearchSites = new ResearchSites

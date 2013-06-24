@@ -26,4 +26,12 @@ package object tuples{
       def +:[E]( e:E ) = Tuple${i+1}(e<#list 1..i as j>,t._${j}</#list>)
     }
 </#list>
+<#list 1..22 as i>
+    implicit def tuple${i}Lift[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>](t: Tuple${i}[<#list 1..i as j>Option[T${j}]<#if i != j>,</#if></#list>]) = new{
+      def liftOption = t match {
+        case Tuple${i}(<#list 1..i as j>Some(_${j})<#if i != j>,</#if></#list>) => Some(Tuple${i}(<#list 1..i as j>_${j}<#if i != j>,</#if></#list>))
+        case _ => None
+      }
+    }
+</#list>
 }
