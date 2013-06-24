@@ -15,7 +15,7 @@ package object projections{
 <#list 2..22 as i>
     implicit def projection${i}OptionLifter[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>](p: => Projection${i}[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>]) = new ProjectionOptionLifter[E,Projection${i}[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>]]{
       def optionColumns = p match { case Projection(<#list 1..i as j>_${j}<#if i != j>,</#if></#list>) => <#list 1..i as j>_${j}.?<#if i != j> ~ </#if></#list> }
-      def mapToOption = optionColumns mapOption { _.liftOption.map(table.typeHelper.create.asInstanceOf[((<#list 1..i as j>T${j}<#if i != j>,</#if></#list>)) => E]) }
+      def mapToOption = optionColumns mapOption { _.liftOption.map(table.mapping.create.asInstanceOf[((<#list 1..i as j>T${j}<#if i != j>,</#if></#list>)) => E]) }
     }
 </#list>
   }

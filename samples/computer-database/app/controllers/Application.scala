@@ -144,7 +144,7 @@ object Application extends Controller {
 
         // outer join fetching whole objects (using .option helper method for mapping)
         val res4 = sites.autoJoin( devices, JoinType.Left )
-                       .map( row => (row._1,row._2.?) ) // .option is a user defined method in table Devices
+                       .map( row => (row._1,row._2.?) ) // .? is a user defined method in table Devices
                        .run
 
         Ok(html.main(html.show(res4.mkString("\n"))))

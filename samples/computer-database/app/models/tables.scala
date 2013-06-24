@@ -62,24 +62,9 @@ package object schema{
   def allTables = {
     Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
   }
-  def tableByName = allTables.map( t => t.tableNamePlural.toLowerCase -> t ).toMap
+  def tableByName = allTables.map( t => t.entityNamePlural.toLowerCase -> t ).toMap
 
   object interfaces{
-    trait AutoInc[E] extends HasId with projections.ProjectionsOptionLifting[E]{
-      this:BaseTable[E]=>
-      val typeHelper : TypeHelper
-      import typeHelper._
-      def columns : Projection[Columns]
-      def * = columns mapWith (create,extract)
-      def ? : ColumnBase[Option[E]]
-      def autoInc2 : ColumnBase[E]
-      def autoIncId = autoInc2 returning id
-      implicit def mappingHelpers2  [T <: Product]( p:Projection[T] ) = new{
-        def mapInsert( from: typeHelper.Columns => T ) = mapWith[E](_ => ???, (e:E) => extract(e).map(from))
-        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
-        def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
-      }
-    }
     trait HasId{
       this:BaseTable[_]=>
       def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -94,37 +79,48 @@ package object schema{
       def siteId = column[Long]("site_id")
       def site  = foreignKey(fkName,siteId,Sites)(_.id)
     }
-    abstract class BaseTable[E] //  <: entities.interfaces.Entity
-      ( table: String )
-      (implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId with TableHelpers  {
+    trait AutoInc[E] extends HasId with projections.ProjectionsOptionLifting[E]{
+      this:BaseTable[E]=>
+      val mapping : Mapping[E]
+      import mapping._
+      def columns : Projection[Columns]
+      def * = columns mapWith (create,extract)
+      def ? : ColumnBase[Option[E]]
+      def autoInc2 : ColumnBase[E]
+      def autoIncId = autoInc2 returning id
+      implicit def mappingHelpers2  [T <: Product]( p:Projection[T] ) = new{
+        def mapInsert( from: mapping.Columns => T ) = mapWith[E](_ => ???, (e:E) => extract(e).map(from))
+        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
+        def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
+      }
+    }
+    trait Mapping[E]{
+      type Columns <: Product
+      def create : Columns => E
+      def extract   : E => Option[Columns]
+    }
+    def Mapping[E,C <:Product]( to: C => E )( from: E => Option[C] ) = new Mapping[E]{
+      type Columns = C
+      def create = to
+      def extract = from
+    }
+    abstract class BaseTable[E:TypeTag]( table: String ) extends Table[E](table:String) with HasId with TableHelpers  {
       this:TableHelpers => 
-      type Entity = E
-      def tableNamePlural   = this.getClass.getName.split("\\$").reverse.head
-      def tableNameSingular = etype.tpe.typeSymbol.name.decoded
-      def tableNameDb       = table.toLowerCase
+
+      // Date mapper
       implicit val javaUtilDateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
         x => new java.sql.Date(x.getTime),
         x => new java.util.Date(x.getTime)
       )
-      //type ColumnTypes
-      //def autoInc = columns.shaped returning id
-      def autoInc = * returning id
-      //def columns : ColumnBase[ColumnTypes]
-    //  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
+
       implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
         def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
       }
-      trait TypeHelper{
-        type Columns <: Product
-        type Entity  //<: entities.interfaces.Entity
-        def create : Columns => E
-        def extract   : E => Option[Columns]
-      }
-      def TypeHelper[C <:Product]( to: C => E )( from: E => Option[C] ) = new TypeHelper{
-        type Columns = C
-        def create = to
-        def extract = from
-      }
+      
+      def autoInc = * returning id
+
+      def entityNamePlural = this.getClass.getName.split("\\$").reverse.head
+      def entityName       = implicitly[TypeTag[E]].tpe.typeSymbol.name.decoded
     }
   }
   import interfaces._
@@ -135,7 +131,6 @@ package object schema{
 
   val Companies = new Companies
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
-    type ColumnTypes = String
     def columns = name
     def * = columns ~ id.? mapWith (create,extract)
     val extract = Company.unapply _
@@ -156,7 +151,6 @@ package object schema{
   }
   val Sites = new Sites
   class Sites extends BaseTable[Site]("SITE") with HasName{
-    type ColumnTypes = (String)
     def columns = name
     def * = columns ~ id.? mapWith (create,extract)
     val extract = Site.unapply _
@@ -168,7 +162,7 @@ package object schema{
     def data    = computerId ~ siteId ~ acquisition ~ price
     def columns = data ~ id.?
 
-    val typeHelper = TypeHelper( Device.tupled )( Device.unapply )
+    val mapping = Mapping( Device.tupled )( Device.unapply )
     // joined columns
 
     // individual columns
@@ -192,14 +186,12 @@ package object schema{
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
-    type ColumnTypes = (Long,Size)
     def size = column[Size]("size",O.DBType("INT(1)"))
     def columns = siteId ~ size
     def * = columns ~ id.? <> (ResearchSite.apply _, ResearchSite.unapply _)
   }
   val ProductionSites = new ProductionSites
   class ProductionSites extends BaseTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
-    type ColumnTypes = (Long,Int)
     def volume = column[Int]("volume")
     def columns = siteId ~ volume
     def * = columns ~ id.? <> (ProductionSite.apply _, ProductionSite.unapply _)
