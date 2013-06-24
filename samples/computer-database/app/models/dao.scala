@@ -142,7 +142,7 @@ object DAOWrapper{
           import scala.slick.lifted._
           val values =
             computers
-              .join(Companies)
+              .autoJoin(Companies)
               .map{
                 case (computer, company) => (computer, company.id.?, company.name.?)
               }
