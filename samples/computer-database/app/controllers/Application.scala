@@ -55,11 +55,11 @@ object Application extends Controller {
    */ 
   val computerForm = Form(
     mapping(
-      "id" -> optional(longNumber),
       "name" -> nonEmptyText,
       "introduced" -> optional(date("yyyy-MM-dd")),
       "discontinued" -> optional(date("yyyy-MM-dd")),
-      "company" -> optional(longNumber)
+      "company" -> optional(longNumber),
+      "id" -> optional(longNumber)
     )(Computer.apply)(Computer.unapply)
   )
   

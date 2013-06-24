@@ -59,11 +59,13 @@ abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Tab
   )
   def autoInc = * returning id
   def columns : ColumnBase[_]
+  //def columns : ColumnBase[ColumnTypes]
+//  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
   implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
-    def mapInsert( from: E => Option[T] ) = mapWith[T,E]         (p) (_ => ???) (from)
-    def mapOption( to:   T => Option[E] ) = mapWith[T,Option[E]] (p) (to)   (_ => ???)
+    def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???) (from)
+    def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to)   (_ => ???)
+    def mapWith[E]( to: T => E )( from: E => Option[T] ) = p <> (to,from)
   }
-  def mapWith[T <: Product,E]( p:Projection[T] )( to: T => E )( from: E => Option[T] ) = p <> (to,from)
 }
 /*
   implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
@@ -107,7 +109,7 @@ package object schema{
   val Companies = new Companies
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
     def columns = name
-    def * = id.? ~ columns <> (Company.apply _, Company.unapply _)
+    def * = columns ~ id.? <> (Company.apply _, Company.unapply _)
   }
   val Computers = new Computers
   class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
@@ -118,13 +120,14 @@ package object schema{
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
     //def companyOption = Query(this).filter(_.id === id).leftJoin(Companies).on(_.companyId === _.id).map(_._2)
     def columns = name ~ introduced ~ discontinued ~ companyId
-    def * = id.? ~: columns <> (Computer.apply _, Computer.unapply _)
+    def * = columns ~ id.? <> (Computer.apply _, Computer.unapply _)
   }
   val Sites = new Sites
   class Sites extends BaseTable[Site]("SITE") with HasName{
     def columns = name
-  	def * = id.? ~ columns <> (Site.apply _, Site.unapply _)
-    // relationships
+    def * = columns ~ id.? <> (Site.apply _, Site.unapply _)
+//  def autoInc = columns.shaped returning id
+      // relationships
     def items : Query[Devices,Device] = for( i <- Devices; s <- i.site; if s.id === id ) yield i // Query(Devices).filter(_.siteId === id)//
     def computers = items.flatMap( _.computer )
   }
@@ -152,34 +155,34 @@ package object schema{
     val create  = (Device.apply _).tupled
 
     // generic helpers (can be copy and pasted between table objects)
-    def * = id.? ~: columns <> (create,extract)
+    def * = (columns ~ id.?).mapWith (create)(extract)
+
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def ? = id.? ~: optionColumns mapOption {
-      case Some(id) +: Tuple4(_1,_2,_3,_4) => Some( create(Some(id) +: (_1.get,_2.get,_3.get,_4.get)) )
-      //case Some(id) +: data => data.liftOption.map( create(_)(id) )
+    def ? = optionColumns ~ id.? mapOption {
+      case ((_1,_2,_3,_4)) :+ (id@Some(_)) => Some( create((_1.get,_2.get,_3.get,_4.get,id)) )
+      //case data :+ Some(id) => data.liftOption.map( create(_ :+ id) )
       case _ => None
     }
-    def autoInc2 = columns mapInsert {
-      extract(_).map{
-        case None +: columns => columns
-        case _ => insertWithIdException
-      }
-    }
+    def autoInc2 = columns mapInsert{ extract(_).map{
+      case data :+ None => data
+      case _ => insertWithIdException
+    }}
+
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
     def size = column[Size]("size",O.DBType("INT(1)"))
     def columns = siteId ~ size
-    def * = id.? ~: columns <> (ResearchSite.apply _, ResearchSite.unapply _)
+    def * = columns ~ id.? <> (ResearchSite.apply _, ResearchSite.unapply _)
   }
   val ProductionSites = new ProductionSites
   class ProductionSites extends BaseTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
     def volume = column[Int]("volume")
     def columns = siteId ~ volume
-    def * = id.? ~: columns <> (ProductionSite.apply _, ProductionSite.unapply _)
+    def * = columns ~ id.? <> (ProductionSite.apply _, ProductionSite.unapply _)
   }
 }

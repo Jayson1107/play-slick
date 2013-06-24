@@ -158,7 +158,7 @@ object DAOWrapper{
               .map(
                 row => (
                   row._1,
-                  row._2.map( _ => Company(row._2,row._3.get) )
+                  row._2.map( _ => Company(row._3.get,row._2) )
                 )
               )
           Page(values, page, pageSize, offset, total )

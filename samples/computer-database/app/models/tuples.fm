@@ -16,6 +16,10 @@ package object tuples{
 </#list>
     }
     // append and prepend extension methods
+    implicit def tuple1Append(a: Any) = new{
+      def :+[E]( e:E ) = Tuple2(a,e)
+      def +:[E]( e:E ) = Tuple2(e,a)
+    }
 <#list 1..21 as i>
     implicit def tuple${i}Append[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>](t: Tuple${i}[<#list 1..i as j>T${j}<#if i != j>,</#if></#list>]) = new{
       def :+[E]( e:E ) = Tuple${i+1}(<#list 1..i as j>t._${j},</#list>e)
