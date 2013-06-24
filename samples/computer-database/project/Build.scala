@@ -16,6 +16,8 @@ object ApplicationBuild extends Build {
     // Add your own project settings here      
   ).settings(fmppSettings:_*).dependsOn(RootProject(file("../../")))
 
+
+  /* FMPP Task */
   lazy val fmpp = TaskKey[Seq[File]]("fmpp")
   lazy val fmppConfig = config("fmpp") hide
   lazy val fmppSettings = inConfig(Compile)(Seq(sourceGenerators <+= fmpp, fmpp <<= fmppTask)) ++ Seq(
@@ -33,13 +35,14 @@ object ApplicationBuild extends Build {
       }
   )
   lazy val fmppTask =
-    (fullClasspath in fmppConfig, runner in fmpp, sourceManaged, streams, cacheDirectory, sourceDirectory) map { (cp, r, output, s, cache, srcDir) =>
+    (fullClasspath in fmppConfig, runner in fmpp, sourceManaged, streams, cacheDirectory, sourceDirectory) map { (cp, r, output_, s, cache, srcDir) =>
+      val output = output_ / "freemarker"
       val fmppSrc = srcDir
       val inFiles = (fmppSrc ** "*.fm" get).toSet
       val cachedFun = FileFunction.cached(cache / "fmpp", outStyle = FilesInfo.exists) { (in: Set[File]) =>
         IO.delete(output ** "*.scala" get)
         val args = "--expert" :: "-q" :: "-S" :: fmppSrc.getPath :: "-O" :: output.getPath ::
-          "--replace-extensions=fm, scala" :: "-M" :: "execute(**/*.fm), ignore(**/*)" :: Nil
+          "--replace-extensions=fm, scala" :: "-M" :: "execute(**"+"/"+"*.fm), ignore(**"+"/"+"*)" :: Nil
         toError(r.run("fmpp.tools.CommandLine", cp.files, args, s.log))
         (output ** "*.scala").get.toSet
       }

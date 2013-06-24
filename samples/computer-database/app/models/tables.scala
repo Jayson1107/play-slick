@@ -26,15 +26,14 @@ import play.api.db.slick.Config.driver.simple._
 import scala.reflect.runtime.universe.TypeTag
 
 import java.util.Date // TODO: remove
-import types._
-
 
 // slick dependencies
 import slick.lifted.{Projection,ColumnBase}
 
 // model internal dependencies
 import models.entities._
-//import models.playSlickHelpers._
+import types._
+import tuples._
 
 object packageHelpers{
   // generate unique names for foreign keys and indices
@@ -60,6 +59,24 @@ abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Tab
   )
   def autoInc = * returning id
   def columns : ColumnBase[_]
+  implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
+    def mapInsert( from: E => Option[T] ) = mapWith[T,E]         (p) (_ => ???) (from)
+    def mapOption( to:   T => Option[E] ) = mapWith[T,Option[E]] (p) (to)   (_ => ???)
+  }
+  def mapWith[T <: Product,E]( p:Projection[T] )( to: T => E )( from: E => Option[T] ) = p <> (to,from)
+}
+/*
+  implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
+    def mapInsert[R]( from: R => T ) = mapWith[T,R] (p) (_ => ???) (from)
+    def mapOption[R]( to:   T => R ) = mapWith[T,R] (p) (to)   (_ => ???)
+  }
+  def mapWith[T <: Product,R]( p:Projection[T] )( to: T => R )( from: R => T ) = p <> (to,(x:R) => Some(from(x)))
+*/
+
+trait AutoInc[E] extends HasId{
+  this:Table[E]=>
+  def autoInc2 : ColumnBase[E]
+  def autoIncId = autoInc2 returning id
 }
 trait HasId{
   this:Table[_]=>
@@ -102,11 +119,6 @@ package object schema{
     //def companyOption = Query(this).filter(_.id === id).leftJoin(Companies).on(_.companyId === _.id).map(_._2)
     def columns = name ~ introduced ~ discontinued ~ companyId
     def * = id.? ~: columns <> (Computer.apply _, Computer.unapply _)
-
-    // relationships
-    // TODO fixme
-    //def items : Query[Devices,Device] = extendBaseTableBlind(this).get(queries.Devices) // for( i <- Devices; c <- i.computer; if c.id === this.id ) yield i
-    //def sites = items.flatMap( _.site )
   }
   val Sites = new Sites
   class Sites extends BaseTable[Site]("SITE") with HasName{
@@ -116,28 +128,47 @@ package object schema{
     def items : Query[Devices,Device] = for( i <- Devices; s <- i.site; if s.id === id ) yield i // Query(Devices).filter(_.siteId === id)//
     def computers = items.flatMap( _.computer )
   }
-
-  def mapToOption[T <: Product,R]( p:Projection[T] )( to: T => R ) = mapOption(p)(to)((_:R) => None)
-  def mapOption  [T <: Product,R]( p:Projection[T] )( to: T => R )( from: R => Option[T] ) = p <> (to,from)
   
+  def insertWithIdException = throw new Exception("Cannot insert object with id != None using autoInc, please remove id or insert into * instead.")
+
   val Devices = new Devices
-  class Devices extends BaseTable[Device]("DEVICE") with HasSite{
-    def columns = computerId ~ siteId ~ acquisition ~ price
+  class Devices extends BaseTable[Device]("DEVICE") with HasSite with AutoInc[Device]{
+    // joined columns
+    def columns       = computerId   ~ siteId   ~ acquisition   ~ price
+    def optionColumns = computerId.? ~ siteId.? ~ acquisition.? ~ price.?
+
+    // individual columns
     def computerId = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price = column[Double]("price")
+
+    // foreign keys
     def computer = foreignKey(fkName,computerId,Computers)(_.id)
-    def * = id.? ~: columns <> (Device.apply _, Device.unapply _)
+
+    // indices
     def idx = index(idxName, (computerId, siteId), unique=true)
+
+    val extract = Device.unapply _
+    val create  = (Device.apply _).tupled
+
+    // generic helpers (can be copy and pasted between table objects)
+    def * = id.? ~: columns <> (create,extract)
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def option = mapToOption( id.? ~ computerId.? ~ siteId.? ~ acquisition.? ~ price.? ){
-                      case (_1:Some[_],_2,_3,_4,_5) => Some(Device(_1,_2.get,_3.get,_4.get,_5.get))
-                      case _ => None
-                    }
+    def ? = id.? ~: optionColumns mapOption {
+      case Some(id) +: Tuple4(_1,_2,_3,_4) => Some( create(Some(id) +: (_1.get,_2.get,_3.get,_4.get)) )
+      //case Some(id) +: data => data.liftOption.map( create(_)(id) )
+      case _ => None
+    }
+    def autoInc2 = columns mapInsert {
+      extract(_).map{
+        case None +: columns => columns
+        case _ => insertWithIdException
+      }
+    }
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
