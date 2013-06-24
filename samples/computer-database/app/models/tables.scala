@@ -65,10 +65,23 @@ package object schema{
   def tableByName = allTables.map( t => t.tableNamePlural.toLowerCase -> t ).toMap
 
   object interfaces{
-    trait AutoInc[E] extends HasId{
+    trait AutoInc[E] extends HasId with projections.ProjectionsOptionLifting[E]{
       this:BaseTable[E]=>
       def autoInc2 : ColumnBase[E]
       def autoIncId = autoInc2 returning id
+      type Columns = typeHelper.Columns
+      import typeHelper._
+      def * = columns mapWith (create,extract)
+      def columns : Projection[Columns]
+      val typeHelper : TypeHelper
+      def create = typeHelper.create
+      def extract = typeHelper.extract
+      def ? : ColumnBase[Option[E]]
+      implicit def mappingHelpers2  [T <: Product]( p:Projection[T] ) = new{
+        def mapInsert( from: typeHelper.Columns => T ) = mapWith[E](_ => ???, (e:E) => typeHelper.extract(e).map(from))
+        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
+        def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
+      }
     }
     trait HasId{
       this:BaseTable[_]=>
@@ -84,7 +97,9 @@ package object schema{
       def siteId = column[Long]("site_id")
       def site  = foreignKey(fkName,siteId,Sites)(_.id)
     }
-    abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId with TableHelpers  {
+    abstract class BaseTable[E] //  <: entities.interfaces.Entity
+      ( table: String )
+      (implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId with TableHelpers  {
       this:TableHelpers => 
       type Entity = E
       def tableNamePlural   = this.getClass.getName.split("\\$").reverse.head
@@ -97,13 +112,21 @@ package object schema{
       //type ColumnTypes
       //def autoInc = columns.shaped returning id
       def autoInc = * returning id
-      def columns : ColumnBase[_]
       //def columns : ColumnBase[ColumnTypes]
     //  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
       implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
-        def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???, from)
-        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
         def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
+      }
+      trait TypeHelper{
+        type Columns <: Product
+        type Entity  //<: entities.interfaces.Entity
+        def create : Columns => E
+        def extract   : E => Option[Columns]
+      }
+      def TypeHelper[C <:Product]( to: C => E )( from: E => Option[C] ) = new TypeHelper{
+        type Columns = C
+        def create = to
+        def extract = from
       }
     }
   }
@@ -123,7 +146,7 @@ package object schema{
   }
   val Computers = new Computers
   class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
-    type ColumnTypes = (String,Option[Date],Option[Date],Option[Long])
+    type Columns = (String,Option[Date],Option[Date],Option[Long])
     // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
     def introduced    = column[Option[Date]]("introduced")
     def discontinued  = column[Option[Date]]("discontinued")
@@ -145,11 +168,11 @@ package object schema{
   
   val Devices = new Devices
   class Devices extends BaseTable[Device]("DEVICE") with HasSite with AutoInc[Device]{
+    def data    = computerId ~ siteId ~ acquisition ~ price
+    def columns = data ~ id.?
+
+    val typeHelper = TypeHelper( Device.tupled )( Device.unapply )
     // joined columns
-    type ColumnTypes    = ( Long, Long, Date, Double )
-    type ColumnsOptions = ( Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double] )
-    def columns       = computerId   ~ siteId   ~ acquisition   ~ price
-    def optionColumns = computerId.? ~ siteId.? ~ acquisition.? ~ price.?
 
     // individual columns
     def computerId  = column[Long]("computer_id")
@@ -162,25 +185,13 @@ package object schema{
     // indices
     def idx = index(idxName, (computerId, siteId), unique=true)
 
-    val extract = Device.unapply _
-    val create  = (Device.apply _).tupled
-
-    // generic helpers (can be copy and pasted between table objects)
-    def * = columns ~ id.? mapWith (create,extract)
-
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def ? = optionColumns ~ id.?.? mapOption { _.liftOption.map(create) }
-
-    def autoInc2 = columns mapInsert{ extract(_).map{
-      case data :+ None => data
-      case _ => insertWithIdException
-    }}
-
-//    type Columns        = (Long, Long, Long, java.util.Date, Double)
+    def ?        = columns mapToOption
+    def autoInc2 = data.mapInsert{ case data :+ id => data }
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
