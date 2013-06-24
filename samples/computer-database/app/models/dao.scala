@@ -11,6 +11,8 @@ import autojoin._
 import relationships._
 import queries._
 import tables._
+import schema.interfaces._
+import entities.interfaces.Entity
 
 /**
   exists, so DAO can be imported as plain names (without DAO postfix)
@@ -32,7 +34,7 @@ object dao{
   The DAO object's methods require implicit Sessions instead or creating them, so they can be composed in a single session.
  */
 object DAOWrapper{
-  abstract class DAOBase[Entity <: entities.Entity]{
+  abstract class DAOBase[Entity <: entities.interfaces.Entity]{
     type TableType <: Table[Entity] with BaseTable[Entity]
     def table : TableType
     def query = Query(table)

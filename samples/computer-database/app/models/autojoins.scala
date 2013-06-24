@@ -5,11 +5,12 @@ package object relationships{
   // models depenencies
   import models.autojoin._
   import models.tables._
+  import models.schema.interfaces._
 
   // auto-join conditions
   implicit def autojoin1 = joinCondition(Computers,Devices)  (_.id === _.computerId)
   implicit def autojoin2 = joinCondition(Companies,Computers)(_.id === _.companyId)
-  implicit def autojoin3 = joinCondition(Sites,InterfaceJoin[schema.HasSite])(_.id === _.siteId)
+  implicit def autojoin3 = joinCondition(Sites,InterfaceJoin[HasSite])(_.id === _.siteId)
 
   implicit def autojoin4 = complexJoin(Sites,Computers){
     joinType => _.autoJoin(Devices,joinType).further(_,joinType)

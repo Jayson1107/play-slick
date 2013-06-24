@@ -10,6 +10,7 @@ import relationships._
 import entities._
 import autojoin._
 import tables._
+import schema.interfaces._
 
 object queries{
   import tables._

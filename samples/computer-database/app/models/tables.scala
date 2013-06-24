@@ -35,7 +35,7 @@ import models.entities._
 import types._
 import tuples._
 
-object packageHelpers{
+trait TableHelpers{
   // generate unique names for foreign keys and indices
   var fk_inc = 0
   var idx_inc = 0
@@ -46,27 +46,10 @@ object packageHelpers{
   
   // generic column helpers (easier as functions rather than extension methods)
   def iLike( lhs:Column[String], rhs:Column[String] ) = lhs.toLowerCase like rhs.toLowerCase
-}
-import packageHelpers._
 
-abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId{
-  def tableNamePlural   = this.getClass.getName.split("\\$").reverse.head
-  def tableNameSingular = etype.tpe.typeSymbol.name.decoded
-  def tableNameDb       = table.toLowerCase
-  implicit val javaUtilDateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
-    x => new java.sql.Date(x.getTime),
-    x => new java.util.Date(x.getTime)
-  )
-  def autoInc = * returning id
-  def columns : ColumnBase[_]
-  //def columns : ColumnBase[ColumnTypes]
-//  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
-  implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
-    def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???) (from)
-    def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to)   (_ => ???)
-    def mapWith[E]( to: T => E )( from: E => Option[T] ) = p <> (to,from)
-  }
+  def insertWithIdException = throw new Exception("Cannot insert object with id != None using autoInc, please remove id or insert into * instead.")
 }
+
 /*
   implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
     def mapInsert[R]( from: R => T ) = mapWith[T,R] (p) (_ => ???) (from)
@@ -75,44 +58,72 @@ abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Tab
   def mapWith[T <: Product,R]( p:Projection[T] )( to: T => R )( from: R => T ) = p <> (to,(x:R) => Some(from(x)))
 */
 
-trait AutoInc[E] extends HasId{
-  this:Table[E]=>
-  def autoInc2 : ColumnBase[E]
-  def autoIncId = autoInc2 returning id
-}
-trait HasId{
-  this:Table[_]=>
-  def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-}
-trait HasName{
-  this:Table[_]=>
-  def name = column[String]("name", O.NotNull)
-  def byName( pattern:Column[String] ) = iLike( name, pattern )
-}
-
 package object schema{
   def allTables = {
     Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
   }
   def tableByName = allTables.map( t => t.tableNamePlural.toLowerCase -> t ).toMap
 
-  trait HasSite{
-    this:Table[_]=>
-    def siteId = column[Long]("site_id")
-    def site  = foreignKey(fkName,siteId,Sites)(_.id)
+  object interfaces{
+    trait AutoInc[E] extends HasId{
+      this:BaseTable[E]=>
+      def autoInc2 : ColumnBase[E]
+      def autoIncId = autoInc2 returning id
+    }
+    trait HasId{
+      this:BaseTable[_]=>
+      def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+    }
+    trait HasName{
+      this:BaseTable[_]=>
+      def name = column[String]("name", O.NotNull)
+      def byName( pattern:Column[String] ) = iLike( name, pattern )
+    }
+    trait HasSite{
+      this:BaseTable[_]=>
+      def siteId = column[Long]("site_id")
+      def site  = foreignKey(fkName,siteId,Sites)(_.id)
+    }
+    abstract class BaseTable[E](table:String)(implicit etype:TypeTag[E]) extends Table[E](table:String) with HasId with TableHelpers  {
+      this:TableHelpers => 
+      type Entity = E
+      def tableNamePlural   = this.getClass.getName.split("\\$").reverse.head
+      def tableNameSingular = etype.tpe.typeSymbol.name.decoded
+      def tableNameDb       = table.toLowerCase
+      implicit val javaUtilDateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
+        x => new java.sql.Date(x.getTime),
+        x => new java.util.Date(x.getTime)
+      )
+      //type ColumnTypes
+      //def autoInc = columns.shaped returning id
+      def autoInc = * returning id
+      def columns : ColumnBase[_]
+      //def columns : ColumnBase[ColumnTypes]
+    //  def column(n:Int) = columns.productElement(n).asInstanceOf[Column[Any]]
+      implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
+        def mapInsert( from: E => Option[T] ) = mapWith[E]         (_ => ???) (from)
+        def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to)   (_ => ???)
+        def mapWith[E]( to: T => E )( from: E => Option[T] ) = p <> (to,from)
+      }
+    }
   }
+  import interfaces._
   trait HasExclusiveSite extends HasSite{
-   this:Table[_]=>
+   this:BaseTable[_]=>
    def idx = index(idxName, (siteId), unique = true)
   }
 
   val Companies = new Companies
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
+    type ColumnTypes = String
     def columns = name
-    def * = columns ~ id.? <> (Company.apply _, Company.unapply _)
+    def * = (columns ~ id.?).mapWith(create)(extract) // TODO: what not id.?
+    val extract = Company.unapply _
+    val create  = (Company.apply _).tupled
   }
   val Computers = new Computers
   class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
+    type ColumnTypes = (String,Option[Date],Option[Date],Option[Long])
     // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
     def introduced    = column[Option[Date]]("introduced")
     def discontinued  = column[Option[Date]]("discontinued")
@@ -120,20 +131,19 @@ package object schema{
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
     //def companyOption = Query(this).filter(_.id === id).leftJoin(Companies).on(_.companyId === _.id).map(_._2)
     def columns = name ~ introduced ~ discontinued ~ companyId
-    def * = columns ~ id.? <> (Computer.apply _, Computer.unapply _)
+    def * = (columns ~ id.?).mapWith(create)(extract)
+    val extract = Computer.unapply _
+    val create  = (Computer.apply _).tupled
   }
   val Sites = new Sites
   class Sites extends BaseTable[Site]("SITE") with HasName{
+    type ColumnTypes = (String)
     def columns = name
-    def * = columns ~ id.? <> (Site.apply _, Site.unapply _)
-//  def autoInc = columns.shaped returning id
-      // relationships
-    def items : Query[Devices,Device] = for( i <- Devices; s <- i.site; if s.id === id ) yield i // Query(Devices).filter(_.siteId === id)//
-    def computers = items.flatMap( _.computer )
+    def * = (columns ~ id.?).mapWith(create)(extract)
+    val extract = Site.unapply _
+    val create  = (Site.apply _).tupled
   }
   
-  def insertWithIdException = throw new Exception("Cannot insert object with id != None using autoInc, please remove id or insert into * instead.")
-
   val Devices = new Devices
   class Devices extends BaseTable[Device]("DEVICE") with HasSite with AutoInc[Device]{
     // joined columns
@@ -172,15 +182,20 @@ package object schema{
       case _ => insertWithIdException
     }}
 
+//    type ColumnTypes = (Long,Long,Date,Double)
+//    type ColumnsOptions = (Option[Long], Option[Long], Option[Long], Option[java.util.Date], Option[Double])
+//    type Columns        = (Long, Long, Long, java.util.Date, Double)
   }
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
+    type ColumnTypes = (Long,Size)
     def size = column[Size]("size",O.DBType("INT(1)"))
     def columns = siteId ~ size
     def * = columns ~ id.? <> (ResearchSite.apply _, ResearchSite.unapply _)
   }
   val ProductionSites = new ProductionSites
   class ProductionSites extends BaseTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
+    type ColumnTypes = (Long,Int)
     def volume = column[Int]("volume")
     def columns = siteId ~ volume
     def * = columns ~ id.? <> (ProductionSite.apply _, ProductionSite.unapply _)
