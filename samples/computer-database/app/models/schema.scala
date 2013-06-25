@@ -21,17 +21,14 @@
   */
 package models
 
-import play.api.db.slick.Config.driver.simple._
-
 import java.util.Date // TODO: remove
 
-// slick dependencies
-import slick.lifted.{Projection,ColumnBase,MappedProjection}
-
-// model internal dependencies
 import entities._
 import types._
+import interfaces._
 import util.tuples._
+import util.schema._
+import play.api.db.slick.Config.driver.simple._
 
 package object schema{
   import interfaces._

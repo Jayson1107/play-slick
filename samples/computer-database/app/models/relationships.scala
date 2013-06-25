@@ -1,8 +1,6 @@
 package models
 package object relationships{
   import play.api.db.slick.Config.driver.simple._
-
-  // models depenencies
   import util.autojoin._
   import models.tables._
   import models.schema.interfaces._

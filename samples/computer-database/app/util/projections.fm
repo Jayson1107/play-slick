@@ -7,6 +7,7 @@ package object projections{
   import slick.lifted._
   import play.api.db.slick.Config.driver.simple._
   import tuples._
+  import schema._
   //import play.api.db.slick.Config.driver.simple._
   import models.schema.interfaces._
   trait ProjectionsOptionLifting[E] extends Table[E] with MappingHelpers[E]{

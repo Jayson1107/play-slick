@@ -11,6 +11,7 @@ import entities._
 import util.autojoin._
 import tables._
 import schema.interfaces._
+import util.schema._
 
 object queries{
   import tables._
