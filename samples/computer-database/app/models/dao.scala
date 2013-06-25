@@ -19,15 +19,15 @@ import entities.interfaces.Entity
 */
 object dao{
   import DAOWrapper._
-  val Companies       = CompaniesDAO
+  //val Companies       = CompaniesDAO
   val Computers       = ComputersDAO
   //val Devices         = DevicesDAO
   //val Sites           = SitesDAO  
   //val ProductionSites = ProductionSitesDAO
   //val ResearchSites   = ResearchSitesDAO
-  val byTable = Map[BaseTable[_],DAOBase[_ <: Product]](
+  /*val byTable = Map[BaseTable[_],DAOBase[_ <: Product]](
     schema.Companies -> CompaniesDAO
-  )
+  )*/
 }
 /**
   DAO objects are postfixed with "DAO" so tables can be imported into scope with plain name.
@@ -116,12 +116,12 @@ object DAOWrapper{
     type TableType = schema.Devices
     def table = schema.Devices
   }
-*/
   object CompaniesDAO extends DAOBase[Company]{
     type TableType = schema.Companies
     def table = schema.Companies
     private object Prepared extends PreparedBase{}
   }
+*/
   object ComputersDAO extends DAOBase[Computer]{
     type TableType = schema.Computers
     def table = schema.Computers

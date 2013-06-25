@@ -139,15 +139,19 @@ package object schema{
     trait SemiFeatured[E]  extends ProjectionsOptionLifting[E] with HasId with StarProjection[E] with OptionMapping[E]
     trait FullyFeatured[E] extends SemiFeatured[E] with AutoInc[E]
     abstract class PowerTable[E:TypeTag]( table: String ) extends BaseTable2(table) with FullyFeatured[E]
+    abstract class SingleColumnTable[E:TypeTag]( table: String ) extends BaseTable2(table) with SemiFeatured[E]
   }
   import interfaces._
 
   val Companies = new Companies
-  class Companies extends BaseTable[Company]("COMPANY") with HasName{
-    def columns = name
-    def * = columns ~ id.? mapWith (create,extract)
-    val extract = Company.unapply _
-    val create  = (Company.apply _).tupled
+  class Companies extends SingleColumnTable[Company]("COMPANY") with HasName{
+    val mapping = Mapping( Company.tupled )( Company.unapply )
+
+    def columns = name ~ id.?
+    
+    def ?         = columns mapToOption
+    def autoInc   = name
+    def autoIncId = name returning id
   }
   val Computers = new Computers
   class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
@@ -164,12 +168,12 @@ package object schema{
   }
 
   val Sites = new Sites
-  class Sites extends Table[Site]("SITE") with HasName with SemiFeatured[Site]{// with AutoInc[Site]{
+  class Sites extends SingleColumnTable[Site]("SITE") with HasName{// with AutoInc[Site]{
     val mapping = Mapping( Site.tupled )( Site.unapply )
 
     def columns = name ~ id.?
     
-    def ?       = columns mapToOption
+    def ?         = columns mapToOption
     def autoInc   = name
     def autoIncId = name returning id
 }
