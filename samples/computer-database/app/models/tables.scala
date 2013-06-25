@@ -80,6 +80,10 @@ package object schema{
       def siteId = column[Long]("site_id")
       def site  = foreignKey(fkName,siteId,Sites)(_.id)
     }
+    trait HasExclusiveSite extends HasSite{
+      this:Table[_]=>
+       def idx = index(idxName, (siteId), unique = true)
+    }
     trait MappingHelpers[E]{
       val mapping : Mapping[E]
       import mapping._
@@ -137,10 +141,6 @@ package object schema{
     abstract class PowerTable[E:TypeTag]( table: String ) extends BaseTable2(table) with FullyFeatured[E]
   }
   import interfaces._
-  trait HasExclusiveSite extends HasSite{
-   this:BaseTable[_]=>
-   def idx = index(idxName, (siteId), unique = true)
-  }
 
   val Companies = new Companies
   class Companies extends BaseTable[Company]("COMPANY") with HasName{
@@ -165,9 +165,9 @@ package object schema{
 
   val Sites = new Sites
   class Sites extends Table[Site]("SITE") with HasName with SemiFeatured[Site]{// with AutoInc[Site]{
-    def columns = name ~ id.?
-    
     val mapping = Mapping( Site.tupled )( Site.unapply )
+
+    def columns = name ~ id.?
     
     def ?       = columns mapToOption
     def autoInc   = name
@@ -176,17 +176,15 @@ package object schema{
   
   val Devices = new Devices
   class Devices extends PowerTable[Device]("DEVICE") with HasSite{
-    def data    = computerId ~ siteId ~ acquisition ~ price
+    val mapping = Mapping( Device.tupled )( Device.unapply )
     def columns = data ~ id.?
 
-    val mapping = Mapping( Device.tupled )( Device.unapply )
-
+    def data    = computerId ~ siteId ~ acquisition ~ price
     def computerId  = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
-    def price = column[Double]("price")
+    def price       = column[Double]("price")
 
     def computer = foreignKey(fkName,computerId,Computers)(_.id)
-
     def idx = index(idxName, (computerId, siteId), unique=true)
 
     def ?       = columns mapToOption
@@ -199,15 +197,26 @@ package object schema{
       */
       /////////////
   val ResearchSites = new ResearchSites
-  class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
+  class ResearchSites extends PowerTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
+    val mapping = Mapping( ResearchSite.tupled )( ResearchSite.unapply )
+    def columns = data ~ id.?
+
+    def data = siteId ~ size
     def size = column[Size]("size",O.DBType("INT(1)"))
-    def columns = siteId ~ size
-    def * = columns ~ id.? <> (ResearchSite.apply _, ResearchSite.unapply _)
+ 
+    def ?       = columns mapToOption
+    def autoInc = data    mapInsert{ case data :+ id => data }
   }
+
   val ProductionSites = new ProductionSites
-  class ProductionSites extends BaseTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
+  class ProductionSites extends PowerTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
+    val mapping = Mapping( ProductionSite.tupled )( ProductionSite.unapply )
+    def columns = data ~ id.?
+
+    def data = siteId ~ volume
     def volume = column[Int]("volume")
-    def columns = siteId ~ volume
-    def * = columns ~ id.? <> (ProductionSite.apply _, ProductionSite.unapply _)
+    
+    def ?       = columns mapToOption
+    def autoInc = data    mapInsert{ case data :+ id => data }
   }
 }
