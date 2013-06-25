@@ -1,21 +1,11 @@
 package models
 package entities
+import java.util.Date
 
 // models internal dependencies
 import types._
-import java.util.Date
-
-package interfaces{
-  // interfaces
-  trait Entity
-  trait HasId extends Entity{
-    def id: Option[Long]
-  }
-  trait HasName extends Entity{
-    def name: String
-  }
-}
 import interfaces._
+
 // entity classes
 case class Company(
   name: String,

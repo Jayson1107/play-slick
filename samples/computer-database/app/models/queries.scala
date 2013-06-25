@@ -8,7 +8,7 @@ import slick.ast.{JoinType}
 // models internal dependencies
 import relationships._
 import entities._
-import autojoin._
+import util.autojoin._
 import tables._
 import schema.interfaces._
 

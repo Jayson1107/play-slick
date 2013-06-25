@@ -10,13 +10,15 @@ import play.api.db.slick.Config.driver.simple.{Session => DBSession,_}
 import views._
 import models._
 import models.dao
-import models.autojoin._
+import util.autojoin._
 import models.tables._
 import models.entities._
 import models.idConversions._
 import models.queries._
 import slick.ast.{JoinType}
 import models.relationships._
+
+class DeviceId(val id: Long) extends AnyVal
 
 /**
  * Manage a database of computers
@@ -308,7 +310,7 @@ sql"""
    * @param filter Filter applied on computer names
    */
   def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
-    val args = schema.tableByName(tableName) match{
+    val args = schema.interfaces.tableByName(tableName) match{
       case schema.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (

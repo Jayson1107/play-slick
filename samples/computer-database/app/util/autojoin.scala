@@ -1,4 +1,4 @@
-package models
+package util
 /**
  * Implements as autojoin feature, which is not part of Slick at the moment.
  * Also see http://slick.typesafe.com/talks/2013_scaladays/2013_scaladays.pdf

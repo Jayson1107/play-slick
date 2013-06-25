@@ -7,7 +7,7 @@ import play.api.Play.current
 
 // models dependencies
 import entities._
-import autojoin._
+import util.autojoin._
 import relationships._
 import queries._
 import tables._
