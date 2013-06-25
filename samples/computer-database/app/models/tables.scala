@@ -115,31 +115,15 @@ package object schema{
       def create = to
       def extract = from
     }
-    abstract class BaseTable2[E:TypeTag]( table: String ) extends Table[E](table:String) with HasId with TableHelpers{
-      this:TableHelpers => 
-
-      // Date mapper
-      implicit val javaUtilDateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
-        x => new java.sql.Date(x.getTime),
-        x => new java.util.Date(x.getTime)
-      )
-
-      implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{
-        def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
-      }
-      
-      
-
+    abstract class MyTable[E:TypeTag]( table: String ) extends Table[E](table:String){
+      // FYI: database name can be accessed through inherited val tableName
       def entityNamePlural = this.getClass.getName.split("\\$").reverse.head
       def entityName       = implicitly[TypeTag[E]].tpe.typeSymbol.name.decoded
     }
-    abstract class BaseTable[E:TypeTag]( table:String ) extends BaseTable2[E](table){
-      def autoInc = * returning id
-    }
     trait SemiFeatured[E]  extends ProjectionsOptionLifting[E] with HasId with StarProjection[E] with OptionMapping[E]
     trait FullyFeatured[E] extends SemiFeatured[E] with AutoInc[E]
-    abstract class PowerTable[E:TypeTag]( table: String ) extends BaseTable2(table) with FullyFeatured[E]
-    abstract class SingleColumnTable[E:TypeTag]( table: String ) extends BaseTable2(table) with SemiFeatured[E]
+    abstract class PowerTable[E:TypeTag]( table: String ) extends MyTable(table) with FullyFeatured[E]
+    abstract class SingleColumnTable[E:TypeTag]( table: String ) extends MyTable(table) with SemiFeatured[E]
   }
   import interfaces._
 

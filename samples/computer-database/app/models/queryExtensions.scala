@@ -14,13 +14,14 @@ import schema.interfaces._
 
 object queries{
   import tables._
-  implicit def extendBaseTableBlind[_,T <: BaseTable[_]](t1:T) = new{
+/*  implicit def extendBaseTableBlind[_,T <: Table[_]](t1:T) = new{
     import t1._
     def getTable[RE,RT <: Table[RE]]( t: RT, joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
       = get( Query(t), joinType )
     def get[RE,RT <: Table[RE]]( q: Query[RT,RE], joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
       = q.filter( r => joinCondition(t1,r) )
   }
+*/
   implicit def extendAllQueries2[E,T <: HasId](q:Query[T,E]) = new{
     import q._
     def byId( id:Column[Long] )

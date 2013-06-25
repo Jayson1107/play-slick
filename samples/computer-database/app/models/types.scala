@@ -22,6 +22,12 @@ package object types{
     }
   }
 
+  // Date mapper
+  implicit val javaUtilDateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
+    x => new java.sql.Date(x.getTime),
+    x => new java.util.Date(x.getTime)
+  )
+
   class DeviceId(val id: Long) extends AnyVal
   implicit val deviceIdType = MappedTypeMapper.base[DeviceId, Long](_.id, new DeviceId(_))
 }
