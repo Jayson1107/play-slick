@@ -89,6 +89,72 @@ object Application extends Controller {
                 .map(_.acquisition)
         show( q.run.map(_.format("yyyy-MM-dd")) )
 
+      case "minimalConfiguration" => {
+        import play.api.db.slick.Config.driver.simple.Session
+        // describe an in-memory h2 database, which is deleted after each session/connection
+        // use jdbc:h2:mem:test1;DB_CLOSE_DELAY=-1 to keep it for several sessions until the jvm end
+        val db = Database.forURL("jdbc:h2:mem:test1", "org.h2.Driver")
+
+        // an automatically closing session scope, which lazily opens a connection on first use and
+        // closes it or returns it to the connection pool on exiting the scope
+        db.withSession {
+          implicit s: Session =>
+          // <- queries here
+        }
+
+        // the same but not as a transaction
+        db.withTransaction{
+          implicit s: Session =>
+          // <- queries here
+        }
+        show("nothing here")
+      }
+
+      case "cleanDataModel" => {
+        import java.sql.Date
+        case class Device(
+          id: Long,
+          price: Double,
+          acquisition: Date
+        )
+        class Devices extends Table[Device]("DEVICE") {
+          def id = column[Long]("ID", O.PrimaryKey)
+          def price = column[Double]("PRICE")
+          def acquisition = column[Date]("ACQUISITION")
+          def * = id ~ price ~ acquisition <>
+            (Device.apply _, Device.unapply _)
+        }
+        val Devices = new Devices
+        show(Query(Devices).map(d => (d.id,d.price)).run)
+      }
+
+      case "noDataModel" => {
+        import java.sql.Date
+        class Devices extends Table[(Long, Double, Date)]("DEVICE") {
+          def id = column[Long]("ID", O.PrimaryKey)
+          def price = column[Double]("PRICE")
+          def acquisition = column[Date]("ACQUISITION")
+          def * = id ~ price ~ acquisition
+        }
+        val Devices = new Devices
+        show(Query(Devices).map(d => (d.id,d.price)).run)
+      }
+
+      case "customColumnTypes" => {
+        case class Device(id: DeviceId,price:Double)
+          
+        implicit val deviceIdType = MappedTypeMapper.base
+          [DeviceId, Long](_.id, new DeviceId(_))
+          
+        class Devices extends Table[Device]("DEVICE") {
+          def id = column[DeviceId]("ID", O.PrimaryKey)
+          def price = column[Double]("PRICE")
+          def * = id ~ price <> (Device.apply _, Device.unapply _)
+        }
+        val Devices = new Devices
+        show(Query(Devices).map(d => (d.id,d.price)).run)
+      }
+
       case "transferredData" => {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[schema.Devices,Device] 
