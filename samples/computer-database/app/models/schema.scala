@@ -37,19 +37,18 @@ package object schema{
   import interfaces._
 
   val Companies = new Companies
-  class Companies extends SingleColumnTable[Company]("COMPANY") with HasName{
+  class Companies extends PowerTable[Company]("COMPANY") with HasName with HasDummy{
     val mapping = Mapping( Company.tupled )( Company.unapply )
+    def columns = name ~ id.? ~ dummy
 
-    def columns = name ~ id.?
-    
+    def data = name ~ dummy
     def ?         = columns mapToOption
-    def autoInc   = name
-    def autoIncId = name returning id
+    def autoInc   = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
   }
   // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
 
   val Computers = new Computers
-  class Computers extends PowerTable[Computer]("COMPUTER") with HasName{
+  class Computers extends PowerTable[Computer]("COMPUTER") with HasName with HasDummy{
     type Columns = (String,Option[Date],Option[Date],Option[Long])
     val mapping = Mapping( Computer.tupled )( Computer.unapply )
     def columns = data ~ id.?
@@ -62,18 +61,19 @@ package object schema{
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
 
     def ?       = columns mapToOption
-    def autoInc = data    mapInsert{ case data :+ id => data }  }
+    def autoInc = data    mapInsert{ case data :+ id => data }
+  }
 
   val Sites = new Sites
-  class Sites extends SingleColumnTable[Site]("SITE") with HasName{// with AutoInc[Site]{
+  class Sites extends PowerTable[Site]("SITE") with HasName with HasDummy{// with AutoInc[Site]{
     val mapping = Mapping( Site.tupled )( Site.unapply )
+    def columns = name ~ id.? ~ dummy
 
-    def columns = name ~ id.?
+    def data = name ~ dummy
     
     def ?         = columns mapToOption
-    def autoInc   = name
-    def autoIncId = name returning id
-}
+    def autoInc   = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
+  }
   
   val Devices = new Devices
   class Devices extends PowerTable[Device]("DEVICE") with HasSite{
@@ -119,5 +119,24 @@ package object schema{
     
     def ?       = columns mapToOption
     def autoInc = data    mapInsert{ case data :+ id => data }
+  }
+
+  // TODO add example for table without id column
+
+  // Slick currently does not allow mapping between single columns and objects,
+  // this affects also inserting into only one column.
+  // One workaround is using another dummy column like for Sites and Companies above,
+  // but it requires changes to the database schema. Another option is simple not
+  // mapping single column, but allow inserts as plain values.
+  // Also see https://github.com/slick/slick/issues/40
+  val Sites2 = new Sites2
+  class Sites2 extends SingleColumnTable[Site2]("SITE") with HasName{
+    val mapping = Mapping( Site2.tupled )( Site2.unapply )
+
+    def columns = name ~ id.?
+    
+    def ?         = columns mapToOption
+    def autoInc   = name
+    def autoIncId = name returning id
   }
 }

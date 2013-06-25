@@ -9,7 +9,8 @@ import interfaces._
 // entity classes
 case class Company(
   name: String,
-  id: Option[Long] = None
+  id: Option[Long] = None,
+  dummy : Boolean = false // dummy column working around https://github.com/slick/slick/issues/40
 ) extends HasId with HasName
 
 case class Computer(
@@ -29,6 +30,12 @@ case class Device(
 ) extends HasId
 
 case class Site(
+  name: String,
+  id: Option[Long] = None,
+  dummy : Boolean = false // dummy column working around https://github.com/slick/slick/issues/40
+) extends HasId with HasName
+
+case class Site2(
   name: String,
   id: Option[Long] = None
 ) extends HasId with HasName

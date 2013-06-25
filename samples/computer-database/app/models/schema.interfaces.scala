@@ -41,6 +41,12 @@ package object interfaces{
     this:Table[_]=>
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
   }
+  /** This interface provides a dummy column to work around https://github.com/slick/slick/issues/40
+    */
+  trait HasDummy{
+    this:Table[_]=>
+    def dummy = column[Boolean]("dummy")
+  }
   trait HasName extends TableHelpers{
     this:Table[_] =>
     def name = column[String]("name", O.NotNull)

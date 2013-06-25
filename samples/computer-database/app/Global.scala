@@ -35,10 +35,10 @@ object InitialData {
 */
 
       Seq(
-        ("Lausanne",Some(1L)),
-        ("Uppsala",None),
-        ("San Francisco",None)
-      ).map( (Site.apply _).tupled ).foreach(Sites.*.insert)
+        Site("Lausanne",Some(1L)),
+        Site("Uppsala",None),
+        Site("San Francisco",None)
+      ).foreach(Sites.insert)
 
       Seq(
         Company("Apple Inc.", Option(1L)),

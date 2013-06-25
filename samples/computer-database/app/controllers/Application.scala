@@ -161,7 +161,7 @@ object Application extends Controller {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[schema.Devices,Device] 
         val site   = Site("New York")
-        val siteId = schema.Sites.autoInc.insert( site.name )
+        val siteId = schema.Sites.autoInc.insert( site )
         device.map(_.siteId).update(siteId)
         show("updates done")
       }
