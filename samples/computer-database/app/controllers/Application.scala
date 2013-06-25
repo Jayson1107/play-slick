@@ -93,7 +93,7 @@ object Application extends Controller {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[schema.Devices,Device] 
         val site   = Site("New York")
-        val siteId = schema.Sites.autoInc.insert( site )
+        val siteId = schema.Sites.autoInc.insert( site.name )
         device.map(_.siteId).update(siteId)
         show("updates done")
       }
@@ -262,6 +262,7 @@ sql"""
               )
           }
         )
+/*
       case t => 
         val currentPage = dao.byTable(t).list(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (
@@ -271,6 +272,7 @@ sql"""
           ),
           currentPage.items.map {_.productIterator.drop(1).map(e => Some(e.toString)).toSeq}
         )
+*/
     }
     Ok(
       ((currentPage:Page[_],headers:Seq[(Int,String)],values:Seq[Seq[Option[java.io.Serializable]]])

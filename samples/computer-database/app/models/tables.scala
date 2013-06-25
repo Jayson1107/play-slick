@@ -28,12 +28,13 @@ import scala.reflect.runtime.universe.TypeTag
 import java.util.Date // TODO: remove
 
 // slick dependencies
-import slick.lifted.{Projection,ColumnBase}
+import slick.lifted.{Projection,ColumnBase,MappedProjection}
 
 // model internal dependencies
 import models.entities._
 import types._
 import tuples._
+import projections._
 
 trait TableHelpers{
   // generate unique names for foreign keys and indices
@@ -60,39 +61,45 @@ trait TableHelpers{
 
 package object schema{
   def allTables = {
-    Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
+    Seq( Companies, Computers, Devices, ResearchSites, ProductionSites )
   }
-  def tableByName = allTables.map( t => t.entityNamePlural.toLowerCase -> t ).toMap
+  def tableByName = allTables.map( t => t.entityNamePlural.toLowerCase -> (t:Any) ).toMap
 
   object interfaces{
     trait HasId{
-      this:BaseTable[_]=>
+      this:Table[_]=>
       def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
     }
-    trait HasName{
-      this:BaseTable[_]=>
+    trait HasName extends TableHelpers{
+      this:Table[_] =>
       def name = column[String]("name", O.NotNull)
       def byName( pattern:Column[String] ) = iLike( name, pattern )
     }
-    trait HasSite{
-      this:BaseTable[_]=>
+    trait HasSite extends TableHelpers{
+      this:Table[_] =>
       def siteId = column[Long]("site_id")
       def site  = foreignKey(fkName,siteId,Sites)(_.id)
     }
-    trait AutoInc[E] extends HasId with projections.ProjectionsOptionLifting[E]{
-      this:BaseTable[E]=>
+    trait MappingHelpers[E]{
       val mapping : Mapping[E]
       import mapping._
-      def columns : Projection[Columns]
-      def * = columns mapWith (create,extract)
-      def ? : ColumnBase[Option[E]]
-      def autoInc2 : ColumnBase[E]
-      def autoIncId = autoInc2 returning id
       implicit def mappingHelpers2  [T <: Product]( p:Projection[T] ) = new{
-        def mapInsert( from: mapping.Columns => T ) = mapWith[E](_ => ???, (e:E) => extract(e).map(from))
+        def mapInsert( from: Columns => T ) = mapWith[E](_ => ???, (e:E) => extract(e).map(from))
         def mapOption( to:   T => Option[E] ) = mapWith[Option[E]] (to, _ => ???)
         def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
       }
+    }
+    trait StarProjection[E] extends MappingHelpers[E]{
+      import mapping._
+      def columns : Projection[Columns]
+      def * = columns mapWith (create,extract)
+    }
+    trait OptionMapping[E] extends Table[E]{
+      def ? : ColumnBase[Option[E]]      
+    }
+    trait AutoInc[E] extends Table[E] with HasId{
+      def autoInc : ColumnBase[E]
+      def autoIncId = autoInc returning id
     }
     trait Mapping[E]{
       type Columns <: Product
@@ -104,7 +111,7 @@ package object schema{
       def create = to
       def extract = from
     }
-    abstract class BaseTable[E:TypeTag]( table: String ) extends Table[E](table:String) with HasId with TableHelpers  {
+    abstract class BaseTable2[E:TypeTag]( table: String ) extends Table[E](table:String) with HasId with TableHelpers{
       this:TableHelpers => 
 
       // Date mapper
@@ -117,11 +124,17 @@ package object schema{
         def mapWith[E]( to: T => E, from: E => Option[T] ) = p <> (to,from)
       }
       
-      def autoInc = * returning id
+      
 
       def entityNamePlural = this.getClass.getName.split("\\$").reverse.head
       def entityName       = implicitly[TypeTag[E]].tpe.typeSymbol.name.decoded
     }
+    abstract class BaseTable[E:TypeTag]( table:String ) extends BaseTable2[E](table){
+      def autoInc = * returning id
+    }
+    trait SemiFeatured[E]  extends ProjectionsOptionLifting[E] with HasId with StarProjection[E] with OptionMapping[E]
+    trait FullyFeatured[E] extends SemiFeatured[E] with AutoInc[E]
+    abstract class PowerTable[E:TypeTag]( table: String ) extends BaseTable2(table) with FullyFeatured[E]
   }
   import interfaces._
   trait HasExclusiveSite extends HasSite{
@@ -149,41 +162,42 @@ package object schema{
     val extract = Computer.unapply _
     val create  = (Computer.apply _).tupled
   }
+
   val Sites = new Sites
-  class Sites extends BaseTable[Site]("SITE") with HasName{
-    def columns = name
-    def * = columns ~ id.? mapWith (create,extract)
-    val extract = Site.unapply _
-    val create  = (Site.apply _).tupled
-  }
+  class Sites extends Table[Site]("SITE") with HasName with SemiFeatured[Site]{// with AutoInc[Site]{
+    def columns = name ~ id.?
+    
+    val mapping = Mapping( Site.tupled )( Site.unapply )
+    
+    def ?       = columns mapToOption
+    def autoInc   = name
+    def autoIncId = name returning id
+}
   
   val Devices = new Devices
-  class Devices extends BaseTable[Device]("DEVICE") with HasSite with AutoInc[Device]{
+  class Devices extends PowerTable[Device]("DEVICE") with HasSite{
     def data    = computerId ~ siteId ~ acquisition ~ price
     def columns = data ~ id.?
 
     val mapping = Mapping( Device.tupled )( Device.unapply )
-    // joined columns
 
-    // individual columns
     def computerId  = column[Long]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price = column[Double]("price")
 
-    // foreign keys
     def computer = foreignKey(fkName,computerId,Computers)(_.id)
 
-    // indices
     def idx = index(idxName, (computerId, siteId), unique=true)
 
+    def ?       = columns mapToOption
+    def autoInc = data    mapInsert{ case data :+ id => data }
+  }
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
       * mapping all columns to Option using .? and using the mapping to the special
       * applyOption and unapplyOption constructor/extractor methods is s
       */
-    def ?        = columns mapToOption
-    def autoInc2 = data    mapInsert{ case data :+ id => data }
-  }
+      /////////////
   val ResearchSites = new ResearchSites
   class ResearchSites extends BaseTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
     def size = column[Size]("size",O.DBType("INT(1)"))

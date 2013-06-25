@@ -4,11 +4,12 @@
  */
 package object projections{
   import slick.lifted._
+  import play.api.db.slick.Config.driver.simple._
   import tuples._
   //import play.api.db.slick.Config.driver.simple._
   import models.schema.interfaces._
-  trait ProjectionsOptionLifting[E]{
-    table:BaseTable[E] with AutoInc[E] =>
+  trait ProjectionsOptionLifting[E] extends Table[E] with MappingHelpers[E]{
+    table => 
     trait ProjectionOptionLifter[E,P <: Projection[_]]{
       def mapToOption : ColumnBase[Option[E]]
     }
