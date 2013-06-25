@@ -153,19 +153,23 @@ package object schema{
     def autoInc   = name
     def autoIncId = name returning id
   }
+  // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
+
   val Computers = new Computers
-  class Computers extends BaseTable[Computer]("COMPUTER") with HasName{
+  class Computers extends PowerTable[Computer]("COMPUTER") with HasName{
     type Columns = (String,Option[Date],Option[Date],Option[Long])
-    // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
-    def introduced    = column[Option[Date]]("introduced")
-    def discontinued  = column[Option[Date]]("discontinued")
-    def companyId     = column[Option[Long]]("company_id")
+    val mapping = Mapping( Computer.tupled )( Computer.unapply )
+    def columns = data ~ id.?
+
+    def data         = name ~ introduced ~ discontinued ~ companyId
+    def introduced   = column[Option[Date]]("introduced")
+    def discontinued = column[Option[Date]]("discontinued")
+    def companyId    = column[Option[Long]]("company_id")
+
     def company       = foreignKey(fkName,companyId,Companies)(_.id)
-    def columns = name ~ introduced ~ discontinued ~ companyId
-    def * = columns ~ id.? mapWith (create,extract)
-    val extract = Computer.unapply _
-    val create  = (Computer.apply _).tupled
-  }
+
+    def ?       = columns mapToOption
+    def autoInc = data    mapInsert{ case data :+ id => data }  }
 
   val Sites = new Sites
   class Sites extends SingleColumnTable[Site]("SITE") with HasName{// with AutoInc[Site]{

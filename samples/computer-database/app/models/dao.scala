@@ -21,10 +21,10 @@ object dao{
   import DAOWrapper._
   //val Companies       = CompaniesDAO
   val Computers       = ComputersDAO
-  //val Devices         = DevicesDAO
+  val Devices         = DevicesDAO
   //val Sites           = SitesDAO  
-  //val ProductionSites = ProductionSitesDAO
-  //val ResearchSites   = ResearchSitesDAO
+  val ProductionSites = ProductionSitesDAO
+  val ResearchSites   = ResearchSitesDAO
   /*val byTable = Map[BaseTable[_],DAOBase[_ <: Product]](
     schema.Companies -> CompaniesDAO
   )*/
@@ -35,7 +35,7 @@ object dao{
  */
 object DAOWrapper{
   abstract class DAOBase[Entity <: entities.interfaces.Entity]{
-    type TableType <: Table[Entity] with BaseTable[Entity]
+    type TableType <: FullyFeatured[Entity]
     def table : TableType
     def query = Query(table)
 
@@ -103,7 +103,7 @@ object DAOWrapper{
   /*object SitesDAO extends DAOBase[Site]{
     type TableType = schema.Sites
     def table = schema.Sites
-  }
+  }*/
   object ProductionSitesDAO extends DAOBase[ProductionSite]{
     type TableType = schema.ProductionSites
     def table = schema.ProductionSites
@@ -116,6 +116,7 @@ object DAOWrapper{
     type TableType = schema.Devices
     def table = schema.Devices
   }
+/*
   object CompaniesDAO extends DAOBase[Company]{
     type TableType = schema.Companies
     def table = schema.Companies
