@@ -1,9 +1,11 @@
 package models
 package object relationships{
   import play.api.db.slick.Config.driver.simple._
+
   import util.autojoin._
-  import models.tables._
+
   import models.schema.interfaces._
+  import models.tables._
 
   // auto-join conditions
   implicit def autojoin1 = joinCondition(Computers,Devices)  (_.id === _.computerId)

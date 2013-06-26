@@ -1,17 +1,15 @@
 package models.schema
+
 import scala.reflect.runtime.universe.TypeTag
-import util.projections._
-import util.schema._
-import util.queries._
 
 import play.api.db.slick.Config.driver.simple._
 
-package object interfaces{
-  def allTables = {
-    Seq( Companies, Computers, Devices, ResearchSites, ProductionSites )
-  }
-  def tableByName = allTables.map( t => t.entityNamePlural.toLowerCase -> (t:Any) ).toMap
+import util.projections._
+import util.queries._
+import util.schema._
 
+
+package object interfaces{
   /** This interface provides a dummy column to work around https://github.com/slick/slick/issues/40
     */
   trait HasDummy{

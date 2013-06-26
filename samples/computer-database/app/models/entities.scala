@@ -1,12 +1,11 @@
 package models
 package entities
+
 import java.util.Date
 
-// models internal dependencies
-import types._
 import interfaces._
+import types._
 
-// entity classes
 case class Company(
   name: String,
   id: Option[Long] = None,

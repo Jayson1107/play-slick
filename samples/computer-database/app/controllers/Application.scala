@@ -5,18 +5,23 @@ import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
 import play.api.Play.current
+
 import play.api.db.slick.DB
 import play.api.db.slick.Config.driver.simple.{Session => DBSession,_}
+
 import views._
+
+import util.autojoin._
+
 import models._
 import models.dao
-import util.autojoin._
-import models.tables._
 import models.entities._
 import models.idConversions._
 import models.queries._
-import slick.ast.{JoinType}
 import models.relationships._
+import models.tables._
+
+import slick.ast.{JoinType}
 
 class DeviceId(val id: Long) extends AnyVal
 
@@ -310,7 +315,7 @@ sql"""
    * @param filter Filter applied on computer names
    */
   def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
-    val args = schema.interfaces.tableByName(tableName) match{
+    val args = schema.byName(tableName) match{
       case schema.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (
@@ -330,7 +335,6 @@ sql"""
               )
           }
         )
-/*
       case t => 
         val currentPage = dao.byTable(t).list(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (
@@ -340,7 +344,6 @@ sql"""
           ),
           currentPage.items.map {_.productIterator.drop(1).map(e => Some(e.toString)).toSeq}
         )
-*/
     }
     Ok(
       ((currentPage:Page[_],headers:Seq[(Int,String)],values:Seq[Seq[Option[java.io.Serializable]]])

@@ -20,18 +20,22 @@
   *
   */
 package models
-
-import java.util.Date // TODO: remove
-
-import entities._
-import types._
-import interfaces._
-import util.tuples._
-import util.schema._
-import play.api.db.slick.Config.driver.simple._
-
 package object schema{
-  import interfaces._
+  import java.util.Date // TODO: remove
+
+  import play.api.db.slick.Config.driver.simple._
+
+  import util.tuples._
+  import util.schema._
+
+  import entities._
+  import schema.interfaces._
+  import types._
+
+  def allTables = {
+    Seq( Companies, Computers, Devices, Sites, ResearchSites, ProductionSites )
+  }
+  def byName = allTables.map( t => t.entityNamePlural.toLowerCase -> (t/*:Any*/) ).toMap
 
   val Companies = new Companies
   class Companies extends PowerTable[Company]("COMPANY") with HasName with HasDummy{
