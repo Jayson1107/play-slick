@@ -25,8 +25,8 @@ package object interfaces{
   }
   trait HasSite extends NameGenerator{
     this:Table[_] =>
-    def siteId = column[Long]("site_id")
-    def site  = foreignKey(fkName,siteId,Sites)(_.id)
+    def siteId = column[SiteId]("site_id")
+    def site  = foreignKey(fkName,siteId,Sites)(_.typedId)
   }
   trait HasExclusiveSite extends HasSite{
     this:Table[_]=>
@@ -45,5 +45,5 @@ package object interfaces{
     def entityNamePlural = typeOf[this.type].typeSymbol.name.decoded
     def entityName       = typeOf[E]        .typeSymbol.name.decoded
   }
-  abstract class PowerTable       [E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends SingleColumnTable[E,ID](table) with AutoInc[E]
+  abstract class PowerTable       [E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends SingleColumnTable[E,ID](table) with AutoIncTyped[E]
 }

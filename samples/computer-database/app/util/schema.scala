@@ -51,6 +51,9 @@ package object schema{
   trait OptionMapping[E] extends Table[E]{
     def ? : ColumnBase[Option[E]]      
   }
+  trait AutoIncTyped[E] extends AutoInc[E] with HasTypedId{
+    def autoIncTypedId = autoInc returning typedId
+  }
   trait AutoInc[E] extends Table[E] with HasId{
     def autoInc : ColumnBase[E]
     def autoIncId = autoInc returning id

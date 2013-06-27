@@ -165,7 +165,7 @@ object Application extends Controller {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[schema.Devices,Device] 
         val site   = Site("New York")
-        val siteId = schema.Sites.autoInc.insert( site )
+        val siteId = schema.Sites.autoIncTypedId.insert( site )
         device.map(_.siteId).update(siteId)
         show("updates done")
       }
@@ -181,7 +181,7 @@ object Application extends Controller {
         // simple join with Slick's built-in join on methods
 
         // put condition into a val so it can be re-used
-        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.id === i.siteId 
+        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.typedId === i.siteId 
 
         // just two queries
         val sites   = Sites.filter(_.id === 1L)
@@ -197,7 +197,7 @@ object Application extends Controller {
       }
       case "autojoins-1-n" => {
         // autojoins, which are not a Slick feature, but implemented in oackage playSlickHelpers of this sample app
-        implicit def autojoin1 = joinCondition(Sites,Devices)(_.id === _.siteId)
+        implicit def autojoin1 = joinCondition(Sites,Devices)(_.typedId === _.siteId)
 
         // just two queries
         val sites   = Sites.filter(_.id != 1L)
@@ -222,7 +222,7 @@ object Application extends Controller {
         Ok(html.main(html.show(res4.mkString("\n"))))
       }
       case "joinTypes" => {
-        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.id === i.siteId 
+        val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.typedId === i.siteId 
         val sites = Sites
         val devices = Devices
         sites leftJoin  devices on sitesToDevices
@@ -236,7 +236,7 @@ object Application extends Controller {
         Ok(html.main(html.show("nothing here")))
       }
       case "autojoins-n-n" => {
-        implicit def autojoin1 = joinCondition(Sites,Devices)(_.id === _.siteId)
+        implicit def autojoin1 = joinCondition(Sites,Devices)(_.typedId === _.siteId)
         implicit def autojoin2 = joinCondition(Devices,Computers)(_.computerId === _.id)
 
         val q = Sites.autoJoin(Devices).further(Computers) : Query[_,(Site,Computer)]

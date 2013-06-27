@@ -22,7 +22,7 @@ case class Computer(
 
 case class Device(
   computerId: Long,
-  locationId: Long,
+  siteId: SiteId,
   acqusition: Date,
   price: Double,
   id : Option[Long] = None
@@ -30,9 +30,9 @@ case class Device(
 
 case class Site(
   name: String,
-  id: Option[Long] = None,
+  typedId: Option[SiteId] = None,
   dummy : Boolean = false // dummy column working around https://github.com/slick/slick/issues/40
-) extends HasId /*[SiteId]*/ with HasName
+) extends HasTypedId[SiteId] with HasName
 
 case class Site2(
   name: String,
@@ -40,13 +40,13 @@ case class Site2(
 ) extends HasId /*[SiteId]*/ with HasName
 
 case class ResearchSite(
-  siteId: Long,
+  siteId: SiteId,
   size: Size,
   id: Option[Long] = None
 ) extends HasId /*[ResearchSiteId]*/
 
 case class ProductionSite(
-  siteId:Long,
+  siteId:SiteId,
   productionVolume:Int,
   typedId: Option[ProductionSiteId] = None
 ) extends HasTypedId[ProductionSiteId]

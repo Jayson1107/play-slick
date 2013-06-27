@@ -67,7 +67,7 @@ package object schema{
   val Sites = new Sites
   class Sites extends PowerTable[Site,SiteId]("SITE") with HasName with HasDummy{// with AutoInc[Site]{
     val mapping = Mapping( Site.tupled )( Site.unapply )
-    def columns = name ~ id.? ~ dummy
+    def columns = name ~ typedId.? ~ dummy
 
     def data = name ~ dummy
     
