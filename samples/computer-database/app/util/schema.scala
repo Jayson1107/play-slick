@@ -3,12 +3,17 @@ package object schema{
   import play.api.db.slick.Config.driver.simple._
   import slick.lifted.{Projection,ColumnBase}
   
-  trait TypedId extends Any
+  trait TypedId extends Any{
+    val id : Long
+  }
   trait HasId{
-    this:Table[_]=>
+    //this:Table[_]=>
+    def id : Column[Long]
+  }
+  trait HasTypedId{
+    //this:Table[_]=>
     type IdType <: TypedId
     def typedId : Column[IdType]
-    def id : Column[Long]
   }
   trait Mapping[E]{
     type Columns <: Product

@@ -30,6 +30,7 @@ package object types{
   )
 
   // typed id value classes
+  //sealed trait TypedId extends util.schema.TypedId
   case class CompanyId       (val id: Long) extends AnyVal with TypedId
   case class ComputerId      (val id: Long) extends AnyVal with TypedId
   case class DeviceId        (val id: Long) extends AnyVal with TypedId

@@ -112,7 +112,7 @@ package object schema{
   val ProductionSites = new ProductionSites
   class ProductionSites extends PowerTable[ProductionSite,ProductionSiteId]("PRODUCTION_SITE") with HasExclusiveSite{
     val mapping = Mapping( ProductionSite.tupled )( ProductionSite.unapply )
-    def columns = data ~ id.?
+    def columns = data ~ typedId.?
 
     def data = siteId ~ volume
     def volume = column[Int]("volume")

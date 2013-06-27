@@ -3,6 +3,7 @@ package object queries{
   import play.api.db.slick.Config.driver.simple._
 
   import slick.ast.{JoinType}
+  import slick.lifted.{BaseTypeMapper}
 
   import util.autojoin._
   import util.schema._
@@ -12,11 +13,16 @@ package object queries{
   import relationships._
   import tables._
 
-  implicit def extendAllQueries2[E,T <: HasId](q:Query[T,E]) = new{
+  implicit def extendHasId[E,T <: HasId](q:Query[T,E]) = new{
     import q._
     def byId( id:Column[Long] )
       = filter(_.id === id)
 //    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
+  }
+  implicit def extendHasTypedId[E,T <: HasTypedId](q:Query[T,E]) = new{
+    import q._
+    def byTypedId[ID <: T#IdType : BaseTypeMapper]( typedId:Column[ID] )
+      = filter(r => typedId === r.typedId.asInstanceOf[ID])
   }
   implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
     import q._
