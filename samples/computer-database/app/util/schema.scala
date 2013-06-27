@@ -8,7 +8,7 @@ package object schema{
   }
   trait HasId{
     //this:Table[_]=>
-    def id : Column[Long]
+    def untypedId : Column[Long]
   }
   trait HasTypedId{
     //this:Table[_]=>
@@ -52,11 +52,11 @@ package object schema{
     def ? : ColumnBase[Option[E]]      
   }
   trait AutoIncTyped[E] extends AutoInc[E] with HasTypedId{
-    def autoIncTypedId = autoInc returning typedId
+    def autoIncTypedId = autoIncCount returning typedId
   }
   trait AutoInc[E] extends Table[E] with HasId{
-    def autoInc : ColumnBase[E]
-    def autoIncId = autoInc returning id
+    def autoIncCount : ColumnBase[E]
+    def autoIncUntypedId = autoIncCount returning untypedId
   }
   /*
     implicit def mappingHelpers  [T <: Product]( p:Projection[T] ) = new{

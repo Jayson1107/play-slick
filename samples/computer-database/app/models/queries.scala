@@ -16,7 +16,7 @@ package object queries{
   implicit def extendHasId[E,T <: HasId](q:Query[T,E]) = new{
     import q._
     def byId( id:Column[Long] )
-      = filter(_.id === id)
+      = filter(_.untypedId === id)
 //    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
   }
   implicit def extendHasTypedId[E,T <: HasTypedId](q:Query[T,E]) = new{
@@ -43,7 +43,7 @@ package object queries{
     /**
      * Construct the Map[String,String] needed to fill a select options set
      */
-    def options = sortBy(_.name).map( c => (c.id.asColumnOf[String],c.name) )
+    def options = sortBy(_.name).map( c => (c.untypedId.asColumnOf[String],c.name) )
   }
 
   //TODO: make Query extension

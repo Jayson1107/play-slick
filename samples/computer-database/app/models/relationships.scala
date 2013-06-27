@@ -8,8 +8,8 @@ package object relationships{
   import models.tables._
 
   // auto-join conditions
-  implicit def autojoin1 = joinCondition(Computers,Devices)  (_.id === _.computerId)
-  implicit def autojoin2 = joinCondition(Companies,Computers)(_.id === _.companyId)
+  implicit def autojoin1 = joinCondition(Computers,Devices)  (_.typedId === _.computerId)
+  implicit def autojoin2 = joinCondition(Companies,Computers)(_.typedId === _.companyId)
   implicit def autojoin3 = joinCondition(Sites,InterfaceJoin[HasSite])(_.typedId === _.siteId)
 
   implicit def autojoin4 = complexJoin(Sites,Computers){

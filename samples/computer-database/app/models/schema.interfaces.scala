@@ -16,7 +16,7 @@ package object interfaces{
     */
   trait HasDummy{
     this:Table[_]=>
-    def dummy = column[Boolean]("dummy")
+    def dummy = column[Int]("dummy")
   }
   trait HasName extends NameGenerator{
     this:Table[_] =>
@@ -39,7 +39,7 @@ package object interfaces{
   abstract class SingleColumnTable[E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends MyTable(table) with Features[E]{
     type IdType = ID
     def typedId = column[IdType]("id", O.PrimaryKey, O.AutoInc)
-    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+    def untypedId = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
     import scala.reflect.runtime.universe.typeOf
     def entityNamePlural = typeOf[this.type].typeSymbol.name.decoded

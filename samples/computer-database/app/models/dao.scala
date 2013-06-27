@@ -82,7 +82,7 @@ object DAOWrapper{
      * @param entity
      */
     def insert(entity: Entity)(implicit s:Session) {
-      table.autoInc.insert(entity)
+      table.autoIncCount.insert(entity)
     }
     /**
      * Update an entity
@@ -144,7 +144,7 @@ object DAOWrapper{
             computers
               .autoJoin(Companies)
               .map{
-                case (computer, company) => (computer, company.id.?, company.name.?)
+                case (computer, company) => (computer, company.typedId.?, company.name.?)
               }
               .sortByRuntimeValue(
                 r => Map(

@@ -64,8 +64,8 @@ object Application extends Controller {
       "name" -> nonEmptyText,
       "introduced" -> optional(date("yyyy-MM-dd")),
       "discontinued" -> optional(date("yyyy-MM-dd")),
-      "company" -> optional(longNumber),
-      "id" -> optional(longNumber)
+      "company" -> optional(of[CompanyId]),
+      "id" -> optional(of[ComputerId])
     )(Computer.apply)(Computer.unapply)
   )
   
@@ -184,7 +184,7 @@ object Application extends Controller {
         val sitesToDevices = (s:schema.Sites,i:schema.Devices) => s.typedId === i.siteId 
 
         // just two queries
-        val sites   = Sites.filter(_.id === 1L)
+        val sites   = Sites.filter(_.typedId === SiteId(1L))
         val devices = Devices.filter(_.price > 1000.0)
 
         // join the two queries using the condition
@@ -200,7 +200,7 @@ object Application extends Controller {
         implicit def autojoin1 = joinCondition(Sites,Devices)(_.typedId === _.siteId)
 
         // just two queries
-        val sites   = Sites.filter(_.id != 1L)
+        val sites   = Sites.filter(_.typedId != SiteId(1L))
         val devices = Devices.filter(_.price > 0.0)
 
         // inner join
@@ -237,7 +237,7 @@ object Application extends Controller {
       }
       case "autojoins-n-n" => {
         implicit def autojoin1 = joinCondition(Sites,Devices)(_.typedId === _.siteId)
-        implicit def autojoin2 = joinCondition(Devices,Computers)(_.computerId === _.id)
+        implicit def autojoin2 = joinCondition(Devices,Computers)(_.computerId === _.typedId)
 
         val q = Sites.autoJoin(Devices).further(Computers) : Query[_,(Site,Computer)]
         Sites.autoJoin(Devices).autoJoinVia(Computers)(_._2) : Query[_,((Site,Device),Computer)]
@@ -282,11 +282,11 @@ sql"""
   where price > $price
 """.as[Device]
 )*/
-        (Sites.filter(_.id === 1L).autoJoin(Devices.filter(_.price > 1000.0),JoinType.Left)).run
+        (Sites.filter(_.typedId === SiteId(1L)).autoJoin(Devices.filter(_.price > 1000.0),JoinType.Left)).run
         for(
           i <- Devices;
           s <- i.site;
-          if s.id === 1L && i.price > 1000.0
+          if s.typedId === SiteId(1L) && i.price > 1000.0
         ) yield (i,s)
 
 
@@ -327,7 +327,7 @@ sql"""
           ),
           currentPage.items.map { case (computer,company) =>
               Seq(
-                  Some(<a href={routes.Application.edit(computer.id.get).toString}>{computer.name}</a>),
+                  Some(<a href={routes.Application.edit(computer.typedId.get.id).toString}>{computer.name}</a>),
                   computer.introduced.map(_.format("dd MMM yyyy")),
                   computer.discontinued.map(_.format("dd MMM yyyy")),
                   company.map(_.name)

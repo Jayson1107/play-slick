@@ -40,28 +40,28 @@ package object schema{
   val Companies = new Companies
   class Companies extends PowerTable[Company,CompanyId]("COMPANY") with HasName with HasDummy{
     val mapping = Mapping( Company.tupled )( Company.unapply )
-    def columns = name ~ id.? ~ dummy
+    def columns = name ~ typedId.? ~ dummy
 
     def data = name ~ dummy
     def ?         = columns mapToOption
-    def autoInc   = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
+    def autoIncCount = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
   }
   // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
 
   val Computers = new Computers
   class Computers extends PowerTable[Computer,ComputerId]("COMPUTER") with HasName with HasDummy{
     val mapping = Mapping( Computer.tupled )( Computer.unapply )
-    def columns = data ~ id.?
+    def columns = data ~ typedId.?
 
     def data         = name ~ introduced ~ discontinued ~ companyId
     def introduced   = column[Option[Date]]("introduced")
     def discontinued = column[Option[Date]]("discontinued")
-    def companyId    = column[Option[Long]]("company_id")
+    def companyId    = column[Option[CompanyId]]("company_id")
 
-    def company       = foreignKey(fkName,companyId,Companies)(_.id)
+    def company       = foreignKey(fkName,companyId,Companies)(_.typedId)
 
     def ?       = columns mapToOption
-    def autoInc = data    mapInsert{ case data :+ id => data }
+    def autoIncCount = data    mapInsert{ case data :+ id => data }
   }
 
   val Sites = new Sites
@@ -72,24 +72,24 @@ package object schema{
     def data = name ~ dummy
     
     def ?         = columns mapToOption
-    def autoInc   = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
+    def autoIncCount = data    mapInsert{ case data :+ id :+ dummy => data :+ dummy }
   }
   
   val Devices = new Devices
   class Devices extends PowerTable[Device,DeviceId]("DEVICE") with HasSite{
     val mapping = Mapping( Device.tupled )( Device.unapply )
-    def columns = data ~ id.?
+    def columns = data ~ typedId.?
 
     def data    = computerId ~ siteId ~ acquisition ~ price
-    def computerId  = column[Long]("computer_id")
+    def computerId  = column[ComputerId]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price       = column[Double]("price")
 
-    def computer = foreignKey(fkName,computerId,Computers)(_.id)
+    def computer = foreignKey(fkName,computerId,Computers)(_.typedId)
     def idx = index(idxName, (computerId, siteId), unique=true)
 
     def ?       = columns mapToOption
-    def autoInc = data    mapInsert{ case data :+ id => data }
+    def autoIncCount = data    mapInsert{ case data :+ id => data }
   }
     /**
       * used for fetching whole Device object after outer join, also example autojoins-1-n
@@ -100,13 +100,13 @@ package object schema{
   val ResearchSites = new ResearchSites
   class ResearchSites extends PowerTable[ResearchSite,ResearchSiteId]("RESEARCH_SITE") with HasExclusiveSite{
     val mapping = Mapping( ResearchSite.tupled )( ResearchSite.unapply )
-    def columns = data ~ id.?
+    def columns = data ~ typedId.?
 
     def data = siteId ~ size
     def size = column[Size]("size",O.DBType("INT(1)"))
  
     def ?       = columns mapToOption
-    def autoInc = data    mapInsert{ case data :+ id => data }
+    def autoIncCount = data    mapInsert{ case data :+ id => data }
   }
 
   val ProductionSites = new ProductionSites
@@ -118,7 +118,7 @@ package object schema{
     def volume = column[Int]("volume")
     
     def ?       = columns mapToOption
-    def autoInc = data    mapInsert{ case data :+ id => data }
+    def autoIncCount = data    mapInsert{ case data :+ id => data }
   }
 
   // TODO add example for table without id column
@@ -133,10 +133,10 @@ package object schema{
   class Sites2 extends SingleColumnTable[Site2,SiteId]("SITE") with HasName{
     val mapping = Mapping( Site2.tupled )( Site2.unapply )
 
-    def columns = name ~ id.?
+    def columns = name ~ untypedId.?
     
     def ?         = columns mapToOption
-    def autoInc   = name
-    def autoIncId = name returning id
+    def autoIncCount = name
+    def autoIncId = name returning untypedId
   }
 }
