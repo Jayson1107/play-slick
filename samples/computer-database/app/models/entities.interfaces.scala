@@ -1,6 +1,8 @@
 package models.entities.interfaces
+import util.schema._
 trait Entity
-trait HasId extends Entity{
+trait HasId[T <: TypedId] extends Entity{
+  type IdType = T
   def id: Option[Long]
 }
 trait HasName extends Entity{

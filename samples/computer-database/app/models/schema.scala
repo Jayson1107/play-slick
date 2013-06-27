@@ -38,7 +38,7 @@ package object schema{
   def byName = allTables.map( t => t.entityNamePlural.toLowerCase -> (t/*:Any*/) ).toMap
 
   val Companies = new Companies
-  class Companies extends PowerTable[Company]("COMPANY") with HasName with HasDummy{
+  class Companies extends PowerTable[Company,CompanyId]("COMPANY") with HasName with HasDummy{
     val mapping = Mapping( Company.tupled )( Company.unapply )
     def columns = name ~ id.? ~ dummy
 
@@ -49,8 +49,7 @@ package object schema{
   // For NULLable columns use Option[..] types (NOT O.Nullable as Slick infers that automatically)
 
   val Computers = new Computers
-  class Computers extends PowerTable[Computer]("COMPUTER") with HasName with HasDummy{
-    type Columns = (String,Option[Date],Option[Date],Option[Long])
+  class Computers extends PowerTable[Computer,ComputerId]("COMPUTER") with HasName with HasDummy{
     val mapping = Mapping( Computer.tupled )( Computer.unapply )
     def columns = data ~ id.?
 
@@ -66,7 +65,7 @@ package object schema{
   }
 
   val Sites = new Sites
-  class Sites extends PowerTable[Site]("SITE") with HasName with HasDummy{// with AutoInc[Site]{
+  class Sites extends PowerTable[Site,SiteId]("SITE") with HasName with HasDummy{// with AutoInc[Site]{
     val mapping = Mapping( Site.tupled )( Site.unapply )
     def columns = name ~ id.? ~ dummy
 
@@ -77,7 +76,7 @@ package object schema{
   }
   
   val Devices = new Devices
-  class Devices extends PowerTable[Device]("DEVICE") with HasSite{
+  class Devices extends PowerTable[Device,DeviceId]("DEVICE") with HasSite{
     val mapping = Mapping( Device.tupled )( Device.unapply )
     def columns = data ~ id.?
 
@@ -99,7 +98,7 @@ package object schema{
       */
       /////////////
   val ResearchSites = new ResearchSites
-  class ResearchSites extends PowerTable[ResearchSite]("RESEARCH_SITE") with HasExclusiveSite{
+  class ResearchSites extends PowerTable[ResearchSite,ResearchSiteId]("RESEARCH_SITE") with HasExclusiveSite{
     val mapping = Mapping( ResearchSite.tupled )( ResearchSite.unapply )
     def columns = data ~ id.?
 
@@ -111,7 +110,7 @@ package object schema{
   }
 
   val ProductionSites = new ProductionSites
-  class ProductionSites extends PowerTable[ProductionSite]("PRODUCTION_SITE") with HasExclusiveSite{
+  class ProductionSites extends PowerTable[ProductionSite,ProductionSiteId]("PRODUCTION_SITE") with HasExclusiveSite{
     val mapping = Mapping( ProductionSite.tupled )( ProductionSite.unapply )
     def columns = data ~ id.?
 
@@ -131,7 +130,7 @@ package object schema{
   // mapping single column, but allow inserts as plain values.
   // Also see https://github.com/slick/slick/issues/40
   val Sites2 = new Sites2
-  class Sites2 extends SingleColumnTable[Site2]("SITE") with HasName{
+  class Sites2 extends SingleColumnTable[Site2,SiteId]("SITE") with HasName{
     val mapping = Mapping( Site2.tupled )( Site2.unapply )
 
     def columns = name ~ id.?

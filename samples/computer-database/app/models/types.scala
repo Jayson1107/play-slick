@@ -1,6 +1,7 @@
 package models
 package object types{
   import slick.lifted.{MappedTypeMapper}
+  import util.schema._
 
   // ENUM example
   sealed abstract class Size
@@ -28,6 +29,59 @@ package object types{
     x => new java.util.Date(x.getTime)
   )
 
-  class DeviceId(val id: Long) extends AnyVal
-  implicit val deviceIdType = MappedTypeMapper.base[DeviceId, Long](_.id, new DeviceId(_))
+  // typed id value classes
+  case class CompanyId       (val id: Long) extends AnyVal with TypedId
+  case class ComputerId      (val id: Long) extends AnyVal with TypedId
+  case class DeviceId        (val id: Long) extends AnyVal with TypedId
+  case class SiteId          (val id: Long) extends AnyVal with TypedId
+  case class ResearchSiteId  (val id: Long) extends AnyVal with TypedId
+  case class ProductionSiteId(val id: Long) extends AnyVal with TypedId
+
+  sealed trait IdFactory[T <: TypedId] extends (Long => T)
+
+  implicit object CompanyId extends IdFactory[CompanyId]
+  implicit object ComputerId extends IdFactory[ComputerId]
+  implicit object DeviceId extends IdFactory[DeviceId]
+  implicit object SiteId extends IdFactory[SiteId]
+  implicit object ResearchSiteId extends IdFactory[ResearchSiteId]
+  implicit object ProductionSiteId extends IdFactory[ProductionSiteId]
+
+
+  // typed id type mappings
+  import MappedTypeMapper.{base=>mapType}
+  implicit val companyIdMapper        = mapType[CompanyId       , Long](_.id,CompanyId)
+  implicit val computerIdMapper       = mapType[ComputerId      , Long](_.id,ComputerId)
+  implicit val deviceIdMapper         = mapType[DeviceId        , Long](_.id,DeviceId)
+  implicit val siteIdMapper           = mapType[SiteId          , Long](_.id,SiteId)
+  implicit val researchSiteIdMapper   = mapType[ResearchSiteId  , Long](_.id,ResearchSiteId)
+  implicit val productionSiteIdMapper = mapType[ProductionSiteId, Long](_.id,ProductionSiteId)
+
+  implicit def longToId[T <: TypedId](id:Long)( implicit create : IdFactory[T] ) = create(id)
+  implicit def longToIdOption[T <: TypedId](id:Long)( implicit create : IdFactory[T] ) = Option(create(id))
+  implicit def longToId[T <: TypedId](id:Option[Long])( implicit create : IdFactory[T] ) = id.map(create)
+
+
+  // play custom id formatters
+  object LongEx {
+    def unapply(s : String) : Option[Long] = try {
+      Some(s.toLong)
+    } catch {
+      case _ : java.lang.NumberFormatException => None
+    }
+  }
+
+  import play.api.data.format.Formatter
+
+  implicit def idFormatter[T <: TypedId](implicit create : IdFactory[T]) : Formatter[T] = new Formatter[T] {
+    override val format = Some(("format.id", Nil))
+
+    def bind(key: String, data: Map[String, String]) = {
+      Right(data.get(key).getOrElse("false")).right.flatMap {
+        case LongEx(i) => Right( create(i) )
+        case _ => Left(Seq(play.api.data.FormError(key, "error.id", Nil)))
+      }
+    }
+
+    def unbind(key: String, value: T) = Map(key -> value.toString)
+  }
 }

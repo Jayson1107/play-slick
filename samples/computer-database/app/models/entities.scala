@@ -10,7 +10,7 @@ case class Company(
   name: String,
   id: Option[Long] = None,
   dummy : Boolean = false // dummy column working around https://github.com/slick/slick/issues/40
-) extends HasId with HasName
+) extends HasId[CompanyId] with HasName
 
 case class Computer(
   name: String,
@@ -18,7 +18,7 @@ case class Computer(
   discontinued: Option[Date] = None,
   companyId: Option[Long] = None,
   id: Option[Long] = None
-) extends HasId with HasName
+) extends HasId[ComputerId] with HasName
 
 case class Device(
   computerId: Long,
@@ -26,27 +26,27 @@ case class Device(
   acqusition: Date,
   price: Double,
   id : Option[Long] = None
-) extends HasId
+) extends HasId[DeviceId]
 
 case class Site(
   name: String,
   id: Option[Long] = None,
   dummy : Boolean = false // dummy column working around https://github.com/slick/slick/issues/40
-) extends HasId with HasName
+) extends HasId[SiteId] with HasName
 
 case class Site2(
   name: String,
   id: Option[Long] = None
-) extends HasId with HasName
+) extends HasId[SiteId] with HasName
 
 case class ResearchSite(
   siteId: Long,
   size: Size,
   id: Option[Long] = None
-) extends HasId
+) extends HasId[ResearchSiteId]
 
 case class ProductionSite(
   siteId:Long,
   productionVolume:Int,
   id: Option[Long] = None
-) extends HasId
+) extends HasId[ProductionSiteId]

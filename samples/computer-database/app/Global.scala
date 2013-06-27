@@ -662,9 +662,7 @@ object InitialData {
       ).foreach(Computers.*.insert)
 
       Devices.*.insertAll(
-        Seq(
-          (1L,1L, new Date(), 2500.0 ,Some(1L))
-        ).map{ (Device.apply _).tupled } : _*
+        Device(1L,1L, new Date(), 2500.0 ,Some(1L))
       )
     }
    }

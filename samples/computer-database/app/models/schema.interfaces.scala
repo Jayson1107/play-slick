@@ -8,6 +8,8 @@ import util.projections._
 import util.queries._
 import util.schema._
 
+import models.types._
+import scala.slick.lifted.BaseTypeMapper
 
 package object interfaces{
   /** This interface provides a dummy column to work around https://github.com/slick/slick/issues/40
@@ -32,11 +34,16 @@ package object interfaces{
   }
   abstract class MyTable[E:TypeTag]( table: String ) extends Table[E](table:String){
     // FYI: database name can be accessed through inherited val tableName
-    def entityNamePlural = this.getClass.getName.split("\\$").reverse.head
-    def entityName       = implicitly[TypeTag[E]].tpe.typeSymbol.name.decoded
   }
-  trait SemiFeatured[E]  extends ProjectionsOptionLifting[E] with HasId with StarProjection[E] with OptionMapping[E]
-  trait FullyFeatured[E] extends SemiFeatured[E] with AutoInc[E]
-  abstract class PowerTable[E:TypeTag]( table: String ) extends MyTable(table) with FullyFeatured[E]
-  abstract class SingleColumnTable[E:TypeTag]( table: String ) extends MyTable(table) with SemiFeatured[E]
+  trait Features[E] extends ProjectionsOptionLifting[E] with HasId with StarProjection[E] with OptionMapping[E]
+  abstract class SingleColumnTable[E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends MyTable(table) with Features[E]{
+    type IdType = ID
+    def typedId = column[IdType]("id", O.PrimaryKey, O.AutoInc)
+    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+
+    import scala.reflect.runtime.universe.typeOf
+    def entityNamePlural = typeOf[this.type].typeSymbol.name.decoded
+    def entityName       = typeOf[E]        .typeSymbol.name.decoded
+  }
+  abstract class PowerTable       [E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends SingleColumnTable[E,ID](table) with AutoInc[E]
 }

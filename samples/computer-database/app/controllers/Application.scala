@@ -20,10 +20,9 @@ import models.idConversions._
 import models.queries._
 import models.relationships._
 import models.tables._
+import models.types._
 
 import slick.ast.{JoinType}
-
-class DeviceId(val id: Long) extends AnyVal
 
 /**
  * Manage a database of computers

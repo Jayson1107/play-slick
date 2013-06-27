@@ -25,7 +25,7 @@ object dao{
   val Sites           = SitesDAO  
   val ProductionSites = ProductionSitesDAO
   val ResearchSites   = ResearchSitesDAO
-  val byTable = Map[PowerTable[_],DAOBase[_ <: Product]](
+  val byTable = Map[PowerTable[_,_],DAOBase[_ <: Product]](
     schema.Companies -> CompaniesDAO
   )
 }
@@ -35,7 +35,7 @@ object dao{
  */
 object DAOWrapper{
   abstract class DAOBase[Entity <: entities.interfaces.Entity]{
-    type TableType <: FullyFeatured[Entity]
+    type TableType <: PowerTable[Entity,_]
     def table : TableType
     def query = Query(table)
 
