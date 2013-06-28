@@ -163,7 +163,7 @@ object Application extends Controller with play.api.db.slick.mvc.SlickController
         // explicit control over execution and transfer: 2 queries, device not fetched from db
         val device = Devices.byId(123L) : Query[schema.Devices,Device] 
         val site   = Site("New York")
-        val siteId = schema.Sites.autoIncTypedId.insert( site )
+        val siteId = schema.tables.Sites.autoIncTypedId.insert( site )
         device.map(_.siteId).update(siteId)
         show("updates done")
       }
@@ -313,7 +313,7 @@ sql"""
    */
   def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
     val args = schema.byName(tableName) match{
-      case schema.Computers =>
+      case schema.tables.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
         (
           currentPage,

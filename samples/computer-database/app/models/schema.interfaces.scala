@@ -7,6 +7,8 @@ import play.api.db.slick.Config.driver.simple._
 import util.projections._
 import util.queries._
 import util.schema._
+import util.schema.NameGenerator._
+import models.schema.tables._
 
 import models.types._
 import scala.slick.lifted.BaseTypeMapper
@@ -18,12 +20,12 @@ package object interfaces{
     this:Table[_]=>
     def dummy = column[Int]("dummy")
   }
-  trait HasName extends NameGenerator{
+  trait HasName{
     this:Table[_] =>
     def name = column[String]("name", O.NotNull)
     def byName( pattern:Column[String] ) = iLike( name, pattern )
   }
-  trait HasSite extends NameGenerator{
+  trait HasSite{
     this:Table[_] =>
     def siteId = column[SiteId]("site_id")
     def site  = foreignKey(fkName,siteId,Sites)(_.typedId)
@@ -41,8 +43,9 @@ package object interfaces{
     def typedId = column[IdType]("id", O.PrimaryKey, O.AutoInc)
     def untypedId = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
+    import scala.reflect.runtime.currentMirror
     import scala.reflect.runtime.universe.typeOf
-    def entityNamePlural = typeOf[this.type].typeSymbol.name.decoded
+    def entityNamePlural = currentMirror.reflect(this).symbol.name.decoded
     def entityName       = typeOf[E]        .typeSymbol.name.decoded
   }
   abstract class PowerTable       [E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends SingleColumnTable[E,ID](table) with AutoIncTyped[E]

@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 import play.api._
 
 import models._
-import schema._
+import models.schema.tables._
 import entities._
 import play.api.db.slick.DB
 import play.api.Play.current

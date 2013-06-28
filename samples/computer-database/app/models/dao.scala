@@ -26,7 +26,7 @@ object dao{
   val ProductionSites = ProductionSitesDAO
   val ResearchSites   = ResearchSitesDAO
   val byTable = Map[PowerTable[_,_],DAOBase[_ <: Product]](
-    schema.Companies -> CompaniesDAO
+    schema.tables.Companies -> CompaniesDAO
   )
 }
 /**
@@ -102,28 +102,28 @@ object DAOWrapper{
   }
   object SitesDAO extends DAOBase[Site]{
     type TableType = schema.Sites
-    def table = schema.Sites
+    def table = schema.tables.Sites
   }
   object ProductionSitesDAO extends DAOBase[ProductionSite]{
     type TableType = schema.ProductionSites
-    def table = schema.ProductionSites
+    def table = schema.tables.ProductionSites
   }
   object ResearchSitesDAO extends DAOBase[ResearchSite]{
     type TableType = schema.ResearchSites
-    def table = schema.ResearchSites
+    def table = schema.tables.ResearchSites
   }
   object DevicesDAO extends DAOBase[Device]{
     type TableType = schema.Devices
-    def table = schema.Devices
+    def table = schema.tables.Devices
   }
   object CompaniesDAO extends DAOBase[Company]{
     type TableType = schema.Companies
-    def table = schema.Companies
+    def table = schema.tables.Companies
     private object Prepared extends PreparedBase{}
   }
   object ComputersDAO extends DAOBase[Computer]{
     type TableType = schema.Computers
-    def table = schema.Computers
+    def table = schema.tables.Computers
     private object Prepared extends PreparedBase{}
 
     /**

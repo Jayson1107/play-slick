@@ -24,8 +24,8 @@ package object schema{
     type Columns = C
     def create = to
     def extract = from
-  }  
-  trait NameGenerator{
+  }
+  object NameGenerator{
     var fk_inc = 0
     var idx_inc = 0
     def fkName(name:String="")  = s"fk_${name}_" +{fk_inc += 1;fk_inc}

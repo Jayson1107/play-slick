@@ -5,10 +5,10 @@ package models
 package object tables{
   import play.api.db.slick.Config.driver.simple._
 
-  def Companies       = Query(schema.Companies)
-  def Computers       = Query(schema.Computers)
-  def Devices         = Query(schema.Devices)
-  def Sites           = Query(schema.Sites)
-  def ResearchSites   = Query(schema.ResearchSites)
-  def ProductionSites = Query(schema.ProductionSites)
+  def Companies       = Query(schema.tables.Companies)
+  def Computers       = Query(schema.tables.Computers)
+  def Devices         = Query(schema.tables.Devices)
+  def Sites           = Query(schema.tables.Sites)
+  def ResearchSites   = Query(schema.tables.ResearchSites)
+  def ProductionSites = Query(schema.tables.ProductionSites)
 }
