@@ -27,25 +27,27 @@ import slick.ast.{JoinType}
  * Manage a database of computers
  */
 object Application extends Controller with play.api.db.slick.mvc.SlickController{
-  import scala.slick.session.Database.threadLocalSession
   import play.templates.TemplateMagic._
+
+  implicit def requestWithDbSession2request(implicit r:RequestWithDbSession) : Request[AnyContent] = r.request
+  implicit def requestWithDbSession2session(implicit r:RequestWithDbSession) : slick.session.Session = r.session
+  case class RequestWithDbSession( request:Request[AnyContent], session: slick.session.Session )
+
   /**
     A Database transaction enabled Action, which when a database request happens and closed and commited at the end of the request.
     For explicit control over session or transaction use DB.withSession or DB.withTransaction scopes.
     */
   object Action{
-    def apply(block: (Request[AnyContent]) => Result): Action[AnyContent] = {
+    def apply(block: RequestWithDbSession => Result): Action[AnyContent] = {
       SlickAction( r => {
-        DB.database.withSession{
-          block(r)
+        DB.database.withSession{ s:slick.session.Session =>
+          block( RequestWithDbSession(r,s) )
         }
       })
     }
     def apply(block: => Result): Action[AnyContent] = {
       SlickAction{
-        DB.database.withSession{
-          block
-        }
+        block
       }
     }
   }
@@ -353,7 +355,7 @@ sql"""
    *
    * @param id Id of the computer to edit
    */
-  def edit(id: Long) = Action {
+  def edit(id: Long) = Action { implicit r =>
     dao.Computers.byId(id).map { computer =>
       Ok(html.editForm(id, computerForm.fill(computer), Companies.options.run))
     }.getOrElse(NotFound)
@@ -377,7 +379,7 @@ sql"""
   /**
    * Display the 'new computer form'.
    */
-  def create(kind:String) = Action {
+  def create(kind:String) = Action { implicit r =>
     kind match{
       case "computers" => Ok(html.createForm(computerForm, Companies.options.run))
     }
@@ -399,7 +401,7 @@ sql"""
   /**
    * Handle computer deletion.
    */
-  def delete(id: Long) = Action {
+  def delete(id: Long) = Action { implicit r =>
     dao.Computers.delete(id) // TODO: replace by queries.Computers.byId(id).delete aka queryToDeleteInvoker(queries.Computers.byId(id)).deleteInvoker.delete
     Home.flashing("success" -> "Computer has been deleted")
   }
