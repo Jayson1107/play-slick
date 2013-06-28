@@ -5,7 +5,6 @@ import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
 import play.api.Play.current
-
 import play.api.db.slick.DB
 import play.api.db.slick.Config.driver.simple.{Session => DBSession,_}
 
@@ -27,7 +26,7 @@ import slick.ast.{JoinType}
 /**
  * Manage a database of computers
  */
-object Application extends Controller {
+object Application extends Controller with play.api.db.slick.mvc.SlickController{
   import scala.slick.session.Database.threadLocalSession
   import play.templates.TemplateMagic._
   /**
@@ -35,16 +34,15 @@ object Application extends Controller {
     For explicit control over session or transaction use DB.withSession or DB.withTransaction scopes.
     */
   object Action{
-    val that = play.api.mvc.Action
     def apply(block: (Request[AnyContent]) => Result): Action[AnyContent] = {
-      that.apply( r => {
+      SlickAction( r => {
         DB.database.withSession{
           block(r)
         }
       })
     }
     def apply(block: => Result): Action[AnyContent] = {
-      that.apply{
+      SlickAction{
         DB.database.withSession{
           block
         }
