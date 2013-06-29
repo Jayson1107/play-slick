@@ -34,11 +34,6 @@ case class Site(
   dummy : Int = 0 // dummy column working around https://github.com/slick/slick/issues/40
 ) extends HasTypedId[SiteId] with HasName
 
-case class Site2(
-  name: String,
-  id: Option[Long] = None
-) extends HasId /*[SiteId]*/ with HasName
-
 case class ResearchSite(
   siteId: SiteId,
   size: Size,
@@ -50,3 +45,8 @@ case class ProductionSite(
   productionVolume:Int,
   typedId: Option[ProductionSiteId] = None
 ) extends HasTypedId[ProductionSiteId]
+
+case class Site2(
+  name: String,
+  untypedId: Option[Long] = None
+) extends HasUntypedId with HasName

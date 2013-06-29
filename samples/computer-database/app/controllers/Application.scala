@@ -128,7 +128,7 @@ object Application extends Controller {
         case class Device(id: DeviceId,price:Double)
           
         implicit val deviceIdType = MappedTypeMapper.base
-          [DeviceId, Long](_.id, new DeviceId(_))
+          [DeviceId, Long](_.untypedId, new DeviceId(_))
           
         class Devices extends Table[Device]("DEVICE") {
           def id = column[DeviceId]("ID", O.PrimaryKey)
@@ -141,7 +141,7 @@ object Application extends Controller {
 
       case "transferredData" => {
         // explicit control over execution and transfer: 2 queries, device not fetched from db
-        val device = Devices.byId(123L) : Query[schema.Devices,Device] 
+        val device = Devices.byUntypedId(123L) : Query[schema.Devices,Device] 
         val site   = Site("New York")
         val siteId = schema.tables.Sites.autoIncTypedId.insert( site )
         device.map(_.siteId).update(siteId)
@@ -305,7 +305,7 @@ sql"""
           ),
           currentPage.items.map { case (computer,company) =>
               Seq(
-                  Some(<a href={routes.Application.edit(computer.typedId.get.id).toString}>{computer.name}</a>),
+                  Some(<a href={routes.Application.edit(computer.typedId.get.untypedId).toString}>{computer.name}</a>),
                   computer.introduced.map(_.format("dd MMM yyyy")),
                   computer.discontinued.map(_.format("dd MMM yyyy")),
                   company.map(_.name)
@@ -331,24 +331,24 @@ sql"""
   /**
    * Display the 'edit form' of a existing Computer.
    *
-   * @param id Id of the computer to edit
+   * @param untypedId Id of the computer to edit
    */
-  def edit(id: Long) = DBAction { implicit rs =>
-    dao.Computers.byId(id).map { computer =>
-      Ok(html.editForm(id, computerForm.fill(computer), Companies.options.run))
+  def edit(untypedId: Long) = DBAction { implicit rs =>
+    dao.Computers.byUntypedId(untypedId).map { computer =>
+      Ok(html.editForm(untypedId, computerForm.fill(computer), Companies.options.run))
     }.getOrElse(NotFound)
   }
   
   /**
    * Handle the 'edit form' submission 
    *
-   * @param id Id of the computer to edit
+   * @param untypedId Id of the computer to edit
    */
-  def update(id: Long) = DBAction { implicit rs =>
+  def update(untypedId: Long) = DBAction { implicit rs =>
     computerForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(html.editForm(id, formWithErrors, Companies.options.run)),
+      formWithErrors => BadRequest(html.editForm(untypedId, formWithErrors, Companies.options.run)),
       computer => {
-        dao.Computers.update( id, computer ) // TODO: queries.Computers.byId(id).update( computer ) // TODO: what happens if we don't set id manually?
+        dao.Computers.update( untypedId, computer ) // TODO: queries.Computers.byUntypedId(id).update( computer ) // TODO: what happens if we don't set id manually?
         Home.flashing("success" -> "Computer %s has been updated".format(computer.name))
       }
     )
@@ -379,8 +379,8 @@ sql"""
   /**
    * Handle computer deletion.
    */
-  def delete(id: Long) = DBAction { implicit rs =>
-    dao.Computers.delete(id) // TODO: replace by queries.Computers.byId(id).delete aka queryToDeleteInvoker(queries.Computers.byId(id)).deleteInvoker.delete
+  def delete(untypedId: Long) = DBAction { implicit rs =>
+    dao.Computers.delete(untypedId) // TODO: replace by queries.Computers.byUntypedId(id).delete aka queryToDeleteInvoker(queries.Computers.byUntypedId(id)).deleteInvoker.delete
     Home.flashing("success" -> "Computer has been deleted")
   }
 

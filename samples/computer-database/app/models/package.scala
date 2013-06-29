@@ -13,8 +13,8 @@ package object idConversions{
   import tables._
 
   // enable using ids as queries
-  implicit def idToComputerQuery[E <: Computer]( id:Long ) = Computers.byId(id)
-  implicit def idToCompanyQuery [E <: Company] ( id:Long ) = Companies.byId(id)
+  implicit def idToComputerQuery[E <: Computer]( id:Long ) = Computers.byUntypedId(id)
+  implicit def idToCompanyQuery [E <: Company] ( id:Long ) = Companies.byUntypedId(id)
   // objects as ids (may not be a good idea :))
   //implicit def objectToId( o:entities.HasId ) = o.id.getOrElse(throw new Exception("id was None when trying to convert object to id"))
 }

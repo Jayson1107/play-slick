@@ -40,7 +40,7 @@ object DAOWrapper{
     def query = Query(table)
 
     protected trait PreparedBase{
-      val byId   = Parameters[Long].flatMap(query byId _)
+      val byUntypedId   = Parameters[Long].flatMap(query byUntypedId _)
                 // Parameters[(Long,Long)].flatMap( (query someFunc _).tupled )
       val length = query.length
     }
@@ -49,10 +49,10 @@ object DAOWrapper{
 
     /**
      * Retrieve a computer from the id
-     * @param id
+     * @param untypedId
      */
-    def byId(id: Long)(implicit s:Session): Option[Entity] = {
-        Prepared.byId(id).firstOption
+    def byUntypedId(untypedId: Long)(implicit s:Session): Option[Entity] = {
+        Prepared.byUntypedId(untypedId).firstOption
     }
 
     /**
@@ -179,7 +179,7 @@ object DAOWrapper{
 
 
     protected trait PreparedBase{
-      val byId   = prepare( (c:Column[Long]) => query.byId(c) )
+      val byUntypedId   = prepare( (c:Column[Long]) => query.byUntypedId(c) )
     }
   /*  def prepare
       [T:TypeMapper,RT:TypeMapper,QU]
@@ -192,7 +192,7 @@ object DAOWrapper{
       (implicit shape: Shape[T, T, PP])
       = Parameters[T].flatMap( f )
     //def prepare[T:TypeMapper,PP,QU](f: PP => Query[_, QU] )/*(implicit shape: Shape[T, T, PP])*/ = Parameters[T].flatMap( f )
-    def byIdPrepared4 = prepare( byId _ )//(Shape.unpackPrimitive[Long])
+    def byIdPrepared4 = prepare( byUntypedId _ )//(Shape.unpackPrimitive[Long])
 
     def byId2( id:scala.slick.lifted.Column[Long], id2:scala.slick.lifted.Column[Long] ) = {
   //    def id_ = Some(id)

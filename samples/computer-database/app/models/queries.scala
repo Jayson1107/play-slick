@@ -13,10 +13,10 @@ package object queries{
   import relationships._
   import tables._
 
-  implicit def extendHasId[E,T <: HasId](q:Query[T,E]) = new{
+  implicit def extendHasuntypedId[E,T <: HasUntypedId](q:Query[T,E]) = new{
     import q._
-    def byId( id:Column[Long] )
-      = filter(_.untypedId === id)
+    def byUntypedId( untypedId:Column[Long] )
+      = filter(_.untypedId === untypedId)
 //    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
   }
   implicit def extendHasTypedId[E,T <: HasTypedId](q:Query[T,E]) = new{
@@ -36,7 +36,7 @@ package object queries{
     }
   }
 
-  implicit def extendHasName[E,T <: HasName with HasId](q:Query[T,E]) = new {
+  implicit def extendHasName[E,T <: HasName with HasUntypedId](q:Query[T,E]) = new {
     import q._
     def byName( pattern:Column[String] )
       = filter(_.byName(pattern))

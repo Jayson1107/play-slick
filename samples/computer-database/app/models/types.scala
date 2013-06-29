@@ -29,14 +29,14 @@ package object types{
     x => new java.util.Date(x.getTime)
   )
 
-  // typed id value classes
+  // typed id untypedId classes
   //sealed trait TypedId extends util.schema.TypedId
-  case class CompanyId       (val id: Long) extends AnyVal with TypedId
-  case class ComputerId      (val id: Long) extends AnyVal with TypedId
-  case class DeviceId        (val id: Long) extends AnyVal with TypedId
-  case class SiteId          (val id: Long) extends AnyVal with TypedId
-  case class ResearchSiteId  (val id: Long) extends AnyVal with TypedId
-  case class ProductionSiteId(val id: Long) extends AnyVal with TypedId
+  case class CompanyId       (val untypedId: Long) extends AnyVal with TypedId
+  case class ComputerId      (val untypedId: Long) extends AnyVal with TypedId
+  case class DeviceId        (val untypedId: Long) extends AnyVal with TypedId
+  case class SiteId          (val untypedId: Long) extends AnyVal with TypedId
+  case class ResearchSiteId  (val untypedId: Long) extends AnyVal with TypedId
+  case class ProductionSiteId(val untypedId: Long) extends AnyVal with TypedId
 
   sealed trait IdFactory[T <: TypedId] extends (Long => T)
 
@@ -50,16 +50,16 @@ package object types{
 
   // typed id type mappings
   import MappedTypeMapper.{base=>mapType}
-  implicit val companyIdMapper        = mapType[CompanyId       , Long](_.id,CompanyId)
-  implicit val computerIdMapper       = mapType[ComputerId      , Long](_.id,ComputerId)
-  implicit val deviceIdMapper         = mapType[DeviceId        , Long](_.id,DeviceId)
-  implicit val siteIdMapper           = mapType[SiteId          , Long](_.id,SiteId)
-  implicit val researchSiteIdMapper   = mapType[ResearchSiteId  , Long](_.id,ResearchSiteId)
-  implicit val productionSiteIdMapper = mapType[ProductionSiteId, Long](_.id,ProductionSiteId)
+  implicit val companyIdMapper        = mapType[CompanyId       , Long](_.untypedId,CompanyId)
+  implicit val computerIdMapper       = mapType[ComputerId      , Long](_.untypedId,ComputerId)
+  implicit val deviceIdMapper         = mapType[DeviceId        , Long](_.untypedId,DeviceId)
+  implicit val siteIdMapper           = mapType[SiteId          , Long](_.untypedId,SiteId)
+  implicit val researchSiteIdMapper   = mapType[ResearchSiteId  , Long](_.untypedId,ResearchSiteId)
+  implicit val productionSiteIdMapper = mapType[ProductionSiteId, Long](_.untypedId,ProductionSiteId)
 
-  implicit def longToId[T <: TypedId](id:Long)( implicit create : IdFactory[T] ) = create(id)
-  implicit def longToIdOption[T <: TypedId](id:Long)( implicit create : IdFactory[T] ) = Option(create(id))
-  implicit def longToId[T <: TypedId](id:Option[Long])( implicit create : IdFactory[T] ) = id.map(create)
+  implicit def longToId[T <: TypedId](untypedId:Long)( implicit create : IdFactory[T] ) = create(untypedId)
+  implicit def longToIdOption[T <: TypedId](untypedId:Long)( implicit create : IdFactory[T] ) = Option(create(untypedId))
+  implicit def longToId[T <: TypedId](untypedId:Option[Long])( implicit create : IdFactory[T] ) = untypedId.map(create)
 
 
   // play custom id formatters
@@ -83,6 +83,6 @@ package object types{
       }
     }
 
-    def unbind(key: String, value: T) = Map(key -> value.toString)
+    def unbind(key: String, untypedId: T) = Map(key -> untypedId.toString)
   }
 }

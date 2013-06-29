@@ -37,7 +37,7 @@ package object interfaces{
   abstract class MyTable[E:TypeTag]( table: String ) extends Table[E](table:String){
     // FYI: database name can be accessed through inherited val tableName
   }
-  trait Features[E] extends ProjectionsOptionLifting[E] with HasId with HasTypedId with StarProjection[E] with OptionMapping[E]
+  trait Features[E] extends ProjectionsOptionLifting[E] with HasUntypedId with HasTypedId with StarProjection[E] with OptionMapping[E]
   abstract class SingleColumnTable[E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends MyTable(table) with Features[E]{
     type IdType = ID
     def typedId = column[IdType]("id", O.PrimaryKey, O.AutoInc)

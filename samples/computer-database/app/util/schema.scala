@@ -4,9 +4,9 @@ package object schema{
   import slick.lifted.{Projection,ColumnBase}
   
   trait TypedId extends Any{
-    val id : Long
+    val untypedId : Long
   }
-  trait HasId{
+  trait HasUntypedId{
     //this:Table[_]=>
     def untypedId : Column[Long]
   }
@@ -54,7 +54,7 @@ package object schema{
   trait AutoIncTyped[E] extends AutoInc[E] with HasTypedId{
     def autoIncTypedId = autoIncCount returning typedId
   }
-  trait AutoInc[E] extends Table[E] with HasId{
+  trait AutoInc[E] extends Table[E] with HasUntypedId{
     def autoIncCount : ColumnBase[E]
     def autoIncUntypedId = autoIncCount returning untypedId
   }
