@@ -144,7 +144,7 @@ object DAOWrapper{
             computers
               .autoJoin(Companies)
               .map{
-                case (computer, company) => (computer, company.typedId.?, company.name.?)
+                case (computer, company) => (computer, company.id.?, company.name.?)
               }
               .sortByRuntimeValue(
                 r => Map(

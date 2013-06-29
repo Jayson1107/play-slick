@@ -28,7 +28,7 @@ package object interfaces{
   trait HasSite{
     this:Table[_] =>
     def siteId = column[SiteId]("site_id")
-    def site  = foreignKey(fkName,siteId,Sites)(_.typedId)
+    def site  = foreignKey(fkName,siteId,Sites)(_.id)
   }
   trait HasExclusiveSite extends HasSite{
     this:Table[_]=>
@@ -37,10 +37,10 @@ package object interfaces{
   abstract class MyTable[E:TypeTag]( table: String ) extends Table[E](table:String){
     // FYI: database name can be accessed through inherited val tableName
   }
-  trait Features[E] extends ProjectionsOptionLifting[E] with HasUntypedId with HasTypedId with StarProjection[E] with OptionMapping[E]
+  trait Features[E] extends ProjectionsOptionLifting[E] with HasUntypedId with HasId with StarProjection[E] with OptionMapping[E]
   abstract class SingleColumnTable[E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends MyTable(table) with Features[E]{
     type IdType = ID
-    def typedId = column[IdType]("id", O.PrimaryKey, O.AutoInc)
+    def id = column[IdType]("id", O.PrimaryKey, O.AutoInc)
     def untypedId = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
     import scala.reflect.runtime.currentMirror

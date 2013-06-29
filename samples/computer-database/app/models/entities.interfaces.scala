@@ -4,10 +4,10 @@ trait Entity
 trait HasUntypedId extends Entity{
   def untypedId: Option[Long]
 }
-trait HasTypedId[T <: TypedId] extends HasUntypedId{
+trait HasId[T <: TypedId] extends HasUntypedId{
   type IdType = T
-  def untypedId = typedId.map(_.untypedId)
-  def typedId: Option[T]
+  def untypedId = id.map(_.untypedId)
+  def id: Option[T]
 }
 trait HasName extends Entity{
   def name: String

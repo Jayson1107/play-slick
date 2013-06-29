@@ -42,7 +42,7 @@ package object schema{
 
   class Companies extends PowerTable[Company,CompanyId]("COMPANY") with HasName with HasDummy{
     val mapping = Mapping( Company.tupled )( Company.unapply )
-    def columns = name ~ typedId.? ~ dummy
+    def columns = name ~ id.? ~ dummy
 
     def data = name ~ dummy
     def ?         = columns mapToOption
@@ -52,14 +52,14 @@ package object schema{
 
   class Computers extends PowerTable[Computer,ComputerId]("COMPUTER") with HasName with HasDummy{
     val mapping = Mapping( Computer.tupled )( Computer.unapply )
-    def columns = data ~ typedId.?
+    def columns = data ~ id.?
 
     def data         = name ~ introduced ~ discontinued ~ companyId
     def introduced   = column[Option[Date]]("introduced")
     def discontinued = column[Option[Date]]("discontinued")
     def companyId    = column[Option[CompanyId]]("company_id")
 
-    def company       = foreignKey(fkName,companyId,Companies)(_.typedId)
+    def company       = foreignKey(fkName,companyId,Companies)(_.id)
 
     def ?       = columns mapToOption
     def autoIncCount = data    mapInsert{ case data :+ id => data }
@@ -67,7 +67,7 @@ package object schema{
 
   class Sites extends PowerTable[Site,SiteId]("SITE") with HasName with HasDummy{// with AutoInc[Site]{
     val mapping = Mapping( Site.tupled )( Site.unapply )
-    def columns = name ~ typedId.? ~ dummy
+    def columns = name ~ id.? ~ dummy
 
     def data = name ~ dummy
     
@@ -77,14 +77,14 @@ package object schema{
   
   class Devices extends PowerTable[Device,DeviceId]("DEVICE") with HasSite{
     val mapping = Mapping( Device.tupled )( Device.unapply )
-    def columns = data ~ typedId.?
+    def columns = data ~ id.?
 
     def data    = computerId ~ siteId ~ acquisition ~ price
     def computerId  = column[ComputerId]("computer_id")
     def acquisition = column[Date]("aquisition")
     def price       = column[Double]("price")
 
-    def computer = foreignKey(fkName,computerId,Computers)(_.typedId)
+    def computer = foreignKey(fkName,computerId,Computers)(_.id)
     def idx = index(idxName, (computerId, siteId), unique=true)
 
     def ?       = columns mapToOption
@@ -98,7 +98,7 @@ package object schema{
       /////////////
   class ResearchSites extends PowerTable[ResearchSite,ResearchSiteId]("RESEARCH_SITE") with HasExclusiveSite{
     val mapping = Mapping( ResearchSite.tupled )( ResearchSite.unapply )
-    def columns = data ~ typedId.?
+    def columns = data ~ id.?
 
     def data = siteId ~ size
     def size = column[Size]("size",O.DBType("INT(1)"))
@@ -109,7 +109,7 @@ package object schema{
 
   class ProductionSites extends PowerTable[ProductionSite,ProductionSiteId]("PRODUCTION_SITE") with HasExclusiveSite{
     val mapping = Mapping( ProductionSite.tupled )( ProductionSite.unapply )
-    def columns = data ~ typedId.?
+    def columns = data ~ id.?
 
     def data = siteId ~ volume
     def volume = column[Int]("volume")

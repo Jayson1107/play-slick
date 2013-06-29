@@ -19,10 +19,10 @@ package object queries{
       = filter(_.untypedId === untypedId)
 //    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
   }
-  implicit def extendHasTypedId[E,T <: HasTypedId](q:Query[T,E]) = new{
+  implicit def extendHasTypedId[E,T <: HasId](q:Query[T,E]) = new{
     import q._
-    def byTypedId[ID <: T#IdType : BaseTypeMapper]( typedId:Column[ID] )
-      = filter(r => typedId === r.typedId.asInstanceOf[ID])
+    def byTypedId[ID <: T#IdType : BaseTypeMapper]( id:Column[ID] )
+      = filter(r => id === r.id.asInstanceOf[ID])
   }
   implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
     import q._

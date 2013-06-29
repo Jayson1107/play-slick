@@ -10,10 +10,10 @@ package object schema{
     //this:Table[_]=>
     def untypedId : Column[Long]
   }
-  trait HasTypedId{
+  trait HasId{
     //this:Table[_]=>
     type IdType <: TypedId
-    def typedId : Column[IdType]
+    def id : Column[IdType]
   }
   trait Mapping[E]{
     type Columns <: Product
@@ -51,8 +51,8 @@ package object schema{
   trait OptionMapping[E] extends Table[E]{
     def ? : ColumnBase[Option[E]]      
   }
-  trait AutoIncTyped[E] extends AutoInc[E] with HasTypedId{
-    def autoIncTypedId = autoIncCount returning typedId
+  trait AutoIncTyped[E] extends AutoInc[E] with HasId{
+    def autoIncTypedId = autoIncCount returning id
   }
   trait AutoInc[E] extends Table[E] with HasUntypedId{
     def autoIncCount : ColumnBase[E]

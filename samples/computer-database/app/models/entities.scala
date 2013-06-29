@@ -8,43 +8,43 @@ import types._
 
 case class Company(
   name: String,
-  typedId: Option[CompanyId] = None,
+  id: Option[CompanyId] = None,
   dummy : Int = 0 // dummy column working around https://github.com/slick/slick/issues/40
-) extends HasTypedId[CompanyId] with HasName
+) extends HasId[CompanyId] with HasName
 
 case class Computer(
   name: String,
   introduced: Option[Date] = None,
   discontinued: Option[Date] = None,
   companyId: Option[CompanyId] = None,
-  typedId: Option[ComputerId] = None
-) extends HasTypedId[ComputerId] with HasName
+  id: Option[ComputerId] = None
+) extends HasId[ComputerId] with HasName
 
 case class Device(
   computerId: ComputerId,
   siteId: SiteId,
   acqusition: Date,
   price: Double,
-  typedId : Option[DeviceId] = None
-) extends HasTypedId[DeviceId]
+  id : Option[DeviceId] = None
+) extends HasId[DeviceId]
 
 case class Site(
   name: String,
-  typedId: Option[SiteId] = None,
+  id: Option[SiteId] = None,
   dummy : Int = 0 // dummy column working around https://github.com/slick/slick/issues/40
-) extends HasTypedId[SiteId] with HasName
+) extends HasId[SiteId] with HasName
 
 case class ResearchSite(
   siteId: SiteId,
   size: Size,
-  typedId: Option[ResearchSiteId] = None
-) extends HasTypedId[ResearchSiteId]
+  id: Option[ResearchSiteId] = None
+) extends HasId[ResearchSiteId]
 
 case class ProductionSite(
   siteId:SiteId,
   productionVolume:Int,
-  typedId: Option[ProductionSiteId] = None
-) extends HasTypedId[ProductionSiteId]
+  id: Option[ProductionSiteId] = None
+) extends HasId[ProductionSiteId]
 
 case class Site2(
   name: String,
