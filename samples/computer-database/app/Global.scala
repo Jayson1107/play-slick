@@ -1,6 +1,5 @@
 import java.text.SimpleDateFormat
 import play.api._
-
 import models._
 import models.schema.tables._
 import entities._
@@ -8,7 +7,7 @@ import play.api.db.slick.DB
 import play.api.Play.current
 import scala.slick.jdbc.StaticQuery.interpolation
 import java.util.Date
-import play.api.db.slick.Config.driver.simple._
+import play.api.db.slick.driver.simple._
 
 object Global extends GlobalSettings {
 
@@ -26,8 +25,8 @@ object InitialData {
 
   val sdf = new SimpleDateFormat("yyyy-MM-dd")
 
-  def insert() {
-    DB.withTransaction{ implicit s =>
+  def insert(){
+    DB.withTransaction{ implicit s:Session =>
      if (Query(tables.Computers.length).first == 0) {
 /*    Seq(
         """INSERT INTO""",

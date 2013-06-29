@@ -2,7 +2,7 @@ package models.schema
 
 import scala.reflect.runtime.universe.TypeTag
 
-import play.api.db.slick.Config.driver.simple._
+import play.api.db.slick.driver.simple._
 
 import util.projections._
 import util.queries._

@@ -23,7 +23,7 @@ package models
 package object schema{
   import java.util.Date // TODO: remove
 
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
 
   import util.tuples._
   import util.schema._

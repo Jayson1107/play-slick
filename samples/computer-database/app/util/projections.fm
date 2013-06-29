@@ -4,7 +4,7 @@ package util
  * tuple helpers for safely adding and matching elements
  */
 package object projections{
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
 
   import slick.lifted._
 

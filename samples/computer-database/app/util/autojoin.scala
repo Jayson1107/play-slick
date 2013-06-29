@@ -4,7 +4,7 @@ package util
  * Also see http://slick.typesafe.com/talks/2013_scaladays/2013_scaladays.pdf
  */
 package object autojoin{
-  import play.api.db.slick.Config.driver.simple._ // FIXME: change into dynamic dependency
+  import play.api.db.slick.driver.simple._ // FIXME: change into dynamic dependency
 
   // slick dependencies
   import slick.ast.JoinType

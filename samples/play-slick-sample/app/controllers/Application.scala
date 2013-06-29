@@ -3,20 +3,17 @@ package controllers
 import models._
 import models.tables._
 import play.api._
-import play.api.db.slick.Config.driver.simple._
-import play.api.db.slick.DB
+import play.api.db.slick._
+import play.api.db.slick.driver.simple._
 import play.api.data._
 import play.api.data.Forms._
 import play.api.mvc._
+import play.api.Play.current
 
-object Application extends Controller {
+object Application extends Controller{
 
-  import play.api.Play.current
-
-  def index = Action {
-    DB.withSession{ implicit session =>
-      Ok(views.html.index(Query(Cats).list))
-    }
+  def index = DBAction { implicit rs =>
+    Ok(views.html.index(Query(Cats).list))
   }
 
   val catForm = Form(
@@ -26,11 +23,9 @@ object Application extends Controller {
     )(Cat.apply)(Cat.unapply)
   )
 
-  def insert = Action { implicit request =>
+  def insert = DBAction { implicit rs =>
     val cat = catForm.bindFromRequest.get
-    DB.withSession{ implicit session =>
-      Cats.insert(cat)
-    }
+    Cats.insert(cat)
 
     Redirect(routes.Application.index)
   }

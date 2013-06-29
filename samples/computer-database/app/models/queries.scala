@@ -1,6 +1,6 @@
 package models
 package object queries{
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
 
   import slick.ast.{JoinType}
   import slick.lifted.{BaseTypeMapper}

@@ -6,7 +6,7 @@ case class Page[A](items: Seq[A], page: Int, size:Int, offset: Long, total: Long
 }
 
 package object idConversions{
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
 
   import entities._
   import queries._

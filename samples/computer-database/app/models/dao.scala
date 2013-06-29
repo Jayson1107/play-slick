@@ -1,5 +1,5 @@
 package models
-import play.api.db.slick.Config.driver.simple._
+import play.api.db.slick.driver.simple._
 
 import play.api.cache.Cache
 import play.api.db.slick.DB

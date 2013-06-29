@@ -1,6 +1,6 @@
 package util
 package object schema{
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
   import slick.lifted.{Projection,ColumnBase}
   
   trait TypedId extends Any{

@@ -3,7 +3,7 @@ package models
  Tables already converted to queries, to reduce boilerplate an avoid confusion when conversions happens implicitly and when Query(_) must be applied explicitly.
  */
 package object tables{
-  import play.api.db.slick.Config.driver.simple._
+  import play.api.db.slick.driver.simple._
 
   def Companies       = Query(schema.tables.Companies)
   def Computers       = Query(schema.tables.Computers)

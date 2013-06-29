@@ -5,9 +5,8 @@ import scala.slick.driver.H2Driver.simple._
 import org.specs2.mutable._
 import play.api.test._
 import play.api.test.Helpers._
-import play.api.db._
 import play.api.Play.current
-import play.api.db.slick.DB
+import play.api.db.slick._
 
 object AutoDDL extends play.api.db.slick.AutoDDLInterface{
   import models._
@@ -52,7 +51,7 @@ class SlickDDLPluginSpec extends Specification {
     "create working evolution" in {
       try {
         running(FakeApplication(additionalConfiguration = testConfiguration)) {
-          DB.withSession { implicit session =>
+          DB.withSession { implicit session:Session =>
             val uId = U.insert((1, "q"))
             val tId = T.insert((1, "t", uId))
             val qId = Q.insert((1, "q", tId))

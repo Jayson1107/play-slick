@@ -4,9 +4,9 @@ import play.api._
 import play.api.mvc._
 import play.api.data._
 import play.api.data.Forms._
+import play.api.db.slick._
 import play.api.Play.current
-import play.api.db.slick.DB
-import play.api.db.slick.Config.driver.simple.{Session => DBSession,_}
+import play.api.db.slick.driver.simple.{Session => DBSession,_}
 
 import views._
 
@@ -26,32 +26,9 @@ import slick.ast.{JoinType}
 /**
  * Manage a database of computers
  */
-object Application extends Controller with play.api.db.slick.mvc.SlickController{
+object Application extends Controller { 
   import play.templates.TemplateMagic._
-
-  implicit def requestWithDbSession2request(implicit r:RequestWithDbSession) : Request[AnyContent] = r.request
-  implicit def requestWithDbSession2session(implicit r:RequestWithDbSession) : slick.session.Session = r.session
-  case class RequestWithDbSession( request:Request[AnyContent], session: slick.session.Session )
-
-  /**
-    A Database transaction enabled Action, which when a database request happens and closed and commited at the end of the request.
-    For explicit control over session or transaction use DB.withSession or DB.withTransaction scopes.
-    */
-  object Action{
-    def apply(block: RequestWithDbSession => Result): Action[AnyContent] = {
-      SlickAction( r => {
-        DB.database.withSession{ s:slick.session.Session =>
-          block( RequestWithDbSession(r,s) )
-        }
-      })
-    }
-    def apply(block: => Result): Action[AnyContent] = {
-      SlickAction{
-        block
-      }
-    }
-  }
-  /**
+ /**
    * This result directly redirect to the application home.
    */
   val Home = Redirect(routes.Application.list("computers",0, 1, ""))
@@ -77,7 +54,7 @@ object Application extends Controller with play.api.db.slick.mvc.SlickController
   def index = Action { Home }
 
 
-  def examples(name:String) = Action{ implicit request =>
+  def examples(name:String) = DBAction{ implicit request =>
     def show(values:Any) = Ok(html.main(html.show(values)))
     // see slides
     name match{
@@ -96,7 +73,8 @@ object Application extends Controller with play.api.db.slick.mvc.SlickController
         show( q.run.map(_.format("yyyy-MM-dd")) )
 
       case "minimalConfiguration" => {
-        import play.api.db.slick.Config.driver.simple.Session
+        import play.api.db.slick.driver.simple.Session
+        import play.api.db.slick.driver.simple.Database
         // describe an in-memory h2 database, which is deleted after each session/connection
         // use jdbc:h2:mem:test1;DB_CLOSE_DELAY=-1 to keep it for several sessions until the jvm end
         val db = Database.forURL("jdbc:h2:mem:test1", "org.h2.Driver")
@@ -313,7 +291,7 @@ sql"""
    * @param orderBy Column to be sorted
    * @param filter Filter applied on computer names
    */
-  def list(tableName:String, page: Int, orderBy: Int, filter: String) = Action { implicit request =>
+  def list(tableName:String, page: Int, orderBy: Int, filter: String) = DBAction { implicit rs =>
     val args = schema.byName(tableName) match{
       case schema.tables.Computers =>
         val currentPage = dao.Computers.withCompanies(page = page, orderBy = orderBy, filter = ("%"+filter+"%"))
@@ -355,7 +333,7 @@ sql"""
    *
    * @param id Id of the computer to edit
    */
-  def edit(id: Long) = Action { implicit r =>
+  def edit(id: Long) = DBAction { implicit rs =>
     dao.Computers.byId(id).map { computer =>
       Ok(html.editForm(id, computerForm.fill(computer), Companies.options.run))
     }.getOrElse(NotFound)
@@ -366,7 +344,7 @@ sql"""
    *
    * @param id Id of the computer to edit
    */
-  def update(id: Long) = Action { implicit request =>
+  def update(id: Long) = DBAction { implicit rs =>
     computerForm.bindFromRequest.fold(
       formWithErrors => BadRequest(html.editForm(id, formWithErrors, Companies.options.run)),
       computer => {
@@ -379,7 +357,7 @@ sql"""
   /**
    * Display the 'new computer form'.
    */
-  def create(kind:String) = Action { implicit r =>
+  def create(kind:String) = DBAction { implicit rs =>
     kind match{
       case "computers" => Ok(html.createForm(computerForm, Companies.options.run))
     }
@@ -388,7 +366,7 @@ sql"""
   /**
    * Handle the 'new computer form' submission.
    */
-  def save = Action { implicit request =>
+  def save = DBAction { implicit rs =>
     computerForm.bindFromRequest.fold(
       formWithErrors => BadRequest(html.createForm(formWithErrors, Companies.options.run)),
       computer => {
@@ -401,7 +379,7 @@ sql"""
   /**
    * Handle computer deletion.
    */
-  def delete(id: Long) = Action { implicit r =>
+  def delete(id: Long) = DBAction { implicit rs =>
     dao.Computers.delete(id) // TODO: replace by queries.Computers.byId(id).delete aka queryToDeleteInvoker(queries.Computers.byId(id)).deleteInvoker.delete
     Home.flashing("success" -> "Computer has been deleted")
   }
