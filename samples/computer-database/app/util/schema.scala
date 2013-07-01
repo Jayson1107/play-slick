@@ -4,7 +4,7 @@ package object schema{
   import slick.lifted.{Projection,ColumnBase}
   
   trait TypedId extends Any{
-    val untypedId : Long
+    def untypedId : Long
   }
   trait HasUntypedId{
     //this:Table[_]=>
@@ -12,8 +12,8 @@ package object schema{
   }
   trait HasId{
     //this:Table[_]=>
-    type IdType <: TypedId
-    def id : Column[IdType]
+    type Id <: TypedId
+    def id : Column[Id]
   }
   trait Mapping[E]{
     type Columns <: Product

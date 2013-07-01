@@ -13,52 +13,42 @@ package object queries{
   import relationships._
   import tables._
 
-  implicit def extendHasuntypedId[E,T <: HasUntypedId](q:Query[T,E]) = new{
-    import q._
-    def byUntypedId( untypedId:Column[Long] )
-      = filter(_.untypedId === untypedId)
-//    def insert[E]( entity:E )(implicit session:Session,table:BaseTable[E]) = schema.autoInc.insert(entity)
-  }
-  implicit def extendHasTypedId[E,T <: HasId](q:Query[T,E]) = new{
-    import q._
-    def byTypedId[ID <: T#IdType : BaseTypeMapper]( id:Column[ID] )
-      = filter(r => id === r.id.asInstanceOf[ID])
-  }
-  implicit def extendAllQueries3[E,T](q:Query[T,E]) = new{
-    import q._
-    def paginate( page: Int , pageSize : Int )
-      = drop(pageSize * page)
-        .take(pageSize)
-    def sortByRuntimeValue( columns:T => Int => Column[_], index:Int )
-      = sortBy{ r =>
-      val cond = columns(r)(index.abs).nullsLast
-      if(index > 0) cond else cond.desc
-    }
+  // aliases for shorter notation
+  type C[Type]          = Column[Type]
+  type Q[Table,Element] = Query[Table,Element]
+  type BTM[Type]        = BaseTypeMapper[Type]
+  implicit def asInstanceOfAsAs( a:Any ) = new {
+    def as[Type] = a.asInstanceOf[Type]
   }
 
-  implicit def extendHasName[E,T <: HasName with HasUntypedId](q:Query[T,E]) = new {
-    import q._
-    def byName( pattern:Column[String] )
-      = filter(_.byName(pattern))
+  // Query extension methods
+  implicit def extendUntypedId[E,T <: HasUntypedId]( q : Q[T,E] ) = new{
+    def byUntypedId( untypedId : C[Long] ) = q.filter( _.untypedId === untypedId )
+  }
+  implicit def extendTypedId[E,T <: HasId]( q : Q[T,E] ) = new{
+    def byTypedId[Id >: T#Id <: T#Id : BTM]( id:C[Id] ) = q.filter(_.id.as[C[Id]] === id)
+  }
+  implicit def extendAll[E,T]( q : Q[T,E] ) = new{
+    def paginate( page: Int, pageSize : Int ) = q.drop( pageSize * page ).take( pageSize )
+    def sortByRuntimeValue( columns:T => Int => C[_], index:Int ) =
+      q.sortBy{ r =>
+        val cond = columns(r)(index.abs).nullsLast
+        if(index > 0) cond else cond.desc
+      }
+  }
+
+  implicit def extendHasName[E,T <: HasName with HasUntypedId](q:Q[T,E]) = new {
+    def byName( pattern:C[String] ) = q.filter( _.byName(pattern) )
     /**
      * Construct the Map[String,String] needed to fill a select options set
      */
-    def options = sortBy(_.name).map( c => (c.untypedId.asColumnOf[String],c.name) )
+    def options = q.sortBy(_.name).map( c => (c.untypedId.asColumnOf[String],c.name) )
   }
 
-  //TODO: make Query extension
-  def withChildren(sites:Query[schema.Sites,Site]) =
+  //TODO: make Query method extension
+  def withChildren(sites:Q[schema.Sites,Site]) =
     sites.autoJoin( ResearchSites, JoinType.Left )
      .autoJoinVia( ProductionSites, JoinType.Left )(_._1)
      .map{ case((s,r),p) => (s, r.size.?, p.volume.?) }
   
-/*
-  implicit def extendBaseTableBlind[_,T <: Table[_]](t1:T) = new{
-    import t1._
-    def getTable[RE,RT <: Table[RE]]( t: RT, joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
-      = get( Query(t), joinType )
-    def get[RE,RT <: Table[RE]]( q: Query[RT,RE], joinType:JoinType = JoinType.Inner )(implicit joinCondition:JoinCondition[T,RT]) : Query[RT,RE]
-      = q.filter( r => joinCondition(t1,r) )
-  }
-*/
 }

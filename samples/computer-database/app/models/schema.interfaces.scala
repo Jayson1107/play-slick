@@ -39,8 +39,8 @@ package object interfaces{
   }
   trait Features[E] extends ProjectionsOptionLifting[E] with HasUntypedId with HasId with StarProjection[E] with OptionMapping[E]
   abstract class SingleColumnTable[E:TypeTag,ID<:TypedId:BaseTypeMapper]( table: String ) extends MyTable(table) with Features[E]{
-    type IdType = ID
-    def id = column[IdType]("id", O.PrimaryKey, O.AutoInc)
+    type Id = ID
+    def id = column[Id]("id", O.PrimaryKey, O.AutoInc)
     def untypedId = column[Long]("id", O.PrimaryKey, O.AutoInc)
 
     import scala.reflect.runtime.currentMirror
