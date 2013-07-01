@@ -48,15 +48,7 @@ package object types{
   implicit object ProductionSiteId extends IdFactory[ProductionSiteId]
 
 
-  // typed id type mappings
-  import MappedTypeMapper.{base=>mapType}
-  implicit val companyIdMapper        = mapType[CompanyId       , Long](_.untypedId,CompanyId)
-  implicit val computerIdMapper       = mapType[ComputerId      , Long](_.untypedId,ComputerId)
-  implicit val deviceIdMapper         = mapType[DeviceId        , Long](_.untypedId,DeviceId)
-  implicit val siteIdMapper           = mapType[SiteId          , Long](_.untypedId,SiteId)
-  implicit val researchSiteIdMapper   = mapType[ResearchSiteId  , Long](_.untypedId,ResearchSiteId)
-  implicit val productionSiteIdMapper = mapType[ProductionSiteId, Long](_.untypedId,ProductionSiteId)
-
+  implicit def idMapper[T <: TypedId]( implicit create : IdFactory[T] ) = MappedTypeMapper.base[T,Long](_.untypedId,create)
   implicit def longToId[T <: TypedId](untypedId:Long)( implicit create : IdFactory[T] ) = create(untypedId)
   implicit def longToIdOption[T <: TypedId](untypedId:Long)( implicit create : IdFactory[T] ) = Option(create(untypedId))
   implicit def longToId[T <: TypedId](untypedId:Option[Long])( implicit create : IdFactory[T] ) = untypedId.map(create)
